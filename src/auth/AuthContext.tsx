@@ -1,17 +1,50 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { AuthContextValue, AuthUser } from "./authTypes";
-import { clearStoredUser, getStoredUser, setStoredUser } from "./authStorage";
+import type { AuthContextValue } from "./authTypes";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = getStoredUser();
-    setUser(stored);
-    setIsLoading(false);
+    let isMounted = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        if (error) {
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(data.session ?? null);
+          setUser(data.session?.user ?? null);
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+      });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (!isMounted) return;
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn: AuthContextValue["signIn"] = async (email, password) => {
@@ -22,32 +55,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: false, error: "Email and password are required." };
     }
 
-    const nextUser: AuthUser = {
-      id: `user_${Math.random().toString(36).slice(2, 10)}`,
+    const { error } = await supabase.auth.signInWithPassword({
       email: trimmedEmail,
-      displayName: trimmedEmail.split("@")[0] || "User",
-      role: "admin"
-    };
+      password: trimmedPassword
+    });
 
-    setStoredUser(nextUser);
-    setUser(nextUser);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
     return { ok: true };
   };
 
   const signOut: AuthContextValue["signOut"] = async () => {
-    clearStoredUser();
+    await supabase.auth.signOut();
+    setSession(null);
     setUser(null);
   };
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      session,
       isAuthenticated: Boolean(user),
       isLoading,
       signIn,
       signOut
     }),
-    [user, isLoading]
+    [user, session, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,7 +7,7 @@ export function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const isBillsRoute = location.pathname.startsWith('/bills');
 
   return (
@@ -49,6 +49,11 @@ export function Navigation() {
                 onClick={() => setDropdownOpen(false)}
               />
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-20">
+                {user?.email && (
+                  <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
+                    {user.email}
+                  </div>
+                )}
                 <button
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setDropdownOpen(false)}

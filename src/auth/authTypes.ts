@@ -1,14 +1,8 @@
-export type UserRole = "admin" | "user" | "approver";
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  displayName: string;
-  role: UserRole;
-}
+import type { Session, User } from "@supabase/supabase-js";
 
 export interface AuthContextValue {
-  user: AuthUser | null;
+  user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
