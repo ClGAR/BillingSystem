@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
+import { useAuth } from '../auth/AuthContext';
 
 export function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const isBillsRoute = location.pathname.startsWith('/bills');
 
   return (
@@ -57,7 +59,7 @@ export function Navigation() {
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => {
                     setDropdownOpen(false);
-                    navigate('/login');
+                    signOut().then(() => navigate('/login'));
                   }}
                 >
                   Logout
