@@ -272,6 +272,36 @@ export function EditBillPage() {
       setErrorMessage("This bill can no longer be edited.");
       return;
     }
+
+    if (!vendorInput.trim()) {
+      setErrorMessage("Vendor name is required.");
+      return;
+    }
+
+    if (!requestDate) {
+      setErrorMessage("Request date is required.");
+      return;
+    }
+
+    if (paymentMethod === "Bank Transfer" && (!bankName.trim() || !accountHolder.trim() || !accountNumber.trim())) {
+      setErrorMessage("Bank name, account holder, and account number are required for Bank Transfer.");
+      return;
+    }
+
+    if (breakdowns.length === 0) {
+      setErrorMessage("At least one breakdown line is required.");
+      return;
+    }
+
+    const hasInvalidAmount = breakdowns.some((b) => {
+      const parsed = parseFloat(b.amount);
+      return !Number.isFinite(parsed) || parsed <= 0;
+    });
+    if (hasInvalidAmount) {
+      setErrorMessage("All breakdown amounts must be greater than 0.");
+      return;
+    }
+
     setErrorMessage(null);
     setIsSaving(true);
 
@@ -287,6 +317,11 @@ export function EditBillPage() {
     }
 
     const totalAmount = calculateTotal();
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      setIsSaving(false);
+      setErrorMessage("Total amount must be greater than 0.");
+      return;
+    }
 
     const payload = {
       bill: {

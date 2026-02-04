@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import type { PostgrestError } from "@supabase/supabase-js";
 import type {
   Bill,
   BillBreakdown,
@@ -77,6 +78,57 @@ export async function listBills(params: ListBillsParams) {
     count: count ?? 0,
     error: null as string | null
   };
+}
+
+export async function generateReferenceNo(requestDate?: string) {
+  const params = requestDate ? { p_request_date: requestDate } : {};
+  const { data, error } = await supabase.rpc("generate_reference_no", params);
+
+  if (error) {
+    return {
+      data: null as string | null,
+      error: mapDbError(error, "Failed to generate reference number.")
+    };
+  }
+
+  return { data: (data as string) || null, error: null as string | null };
+}
+
+export async function isReferenceNoTaken(referenceNo: string, excludeBillId?: string) {
+  const value = referenceNo.trim();
+  if (!value) return false;
+
+  let query = supabase
+    .from("bills")
+    .select("id", { count: "exact", head: true })
+    .eq("reference_no", value);
+
+  if (excludeBillId) {
+    query = query.neq("id", excludeBillId);
+  }
+
+  const { count, error } = await query;
+
+  if (error) return false;
+  return (count ?? 0) > 0;
+}
+
+function mapDbError(error: PostgrestError | null | undefined, fallback: string) {
+  if (!error) return fallback;
+
+  if (error.code === "23505" && error.message.includes("bills_reference_no_unique")) {
+    return "Reference number already exists. Please use a different reference number.";
+  }
+
+  if (error.code === "23514" && error.message.includes("bill_breakdowns_category_check")) {
+    return "One or more breakdown categories are invalid.";
+  }
+
+  if (error.code === "42501") {
+    return "You do not have permission to perform this action.";
+  }
+
+  return error.message || fallback;
 }
 
 export async function getBillById(id: string) {
@@ -167,7 +219,10 @@ export async function createBill(payload: CreateBillPayload) {
     .single();
 
   if (billError || !bill) {
-    return { data: null as Bill | null, error: billError?.message || "Failed to create bill." };
+    return {
+      data: null as Bill | null,
+      error: mapDbError(billError, "Failed to create bill.")
+    };
   }
 
   const breakdowns = payload.breakdowns.map((b) => ({
@@ -185,7 +240,7 @@ export async function createBill(payload: CreateBillPayload) {
     if (breakdownError) {
       return {
         data: bill as Bill,
-        error: breakdownError.message
+        error: mapDbError(breakdownError, "Failed to save breakdown lines.")
       };
     }
   }
@@ -225,7 +280,10 @@ export async function updateBill(id: string, payload: UpdateBillPayload) {
     .single();
 
   if (updateError || !updated) {
-    return { data: null as Bill | null, error: updateError?.message || "Failed to update bill." };
+    return {
+      data: null as Bill | null,
+      error: mapDbError(updateError, "Failed to update bill.")
+    };
   }
 
   const { error: deleteError } = await supabase
@@ -234,7 +292,7 @@ export async function updateBill(id: string, payload: UpdateBillPayload) {
     .eq("bill_id", id);
 
   if (deleteError) {
-    return { data: updated as Bill, error: deleteError.message };
+    return { data: updated as Bill, error: mapDbError(deleteError, "Failed to update breakdown lines.") };
   }
 
   const breakdowns = payload.breakdowns.map((b) => ({
@@ -250,7 +308,7 @@ export async function updateBill(id: string, payload: UpdateBillPayload) {
       .insert(breakdowns);
 
     if (insertError) {
-      return { data: updated as Bill, error: insertError.message };
+      return { data: updated as Bill, error: mapDbError(insertError, "Failed to save breakdown lines.") };
     }
   }
 

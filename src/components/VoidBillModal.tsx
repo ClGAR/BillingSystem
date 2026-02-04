@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface VoidBillModalProps {
@@ -48,7 +49,7 @@ export function VoidBillModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Overlay */}
       <div
@@ -157,5 +158,7 @@ export function VoidBillModal({
         </div>
       </div>
     </div>
+    ,
+    document.body
   );
 }
