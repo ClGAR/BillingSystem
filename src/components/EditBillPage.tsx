@@ -2,7 +2,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { VoidBillModal } from "./VoidBillModal";
 import { ChevronRight, AlertCircle, Plus, X, Upload } from "lucide-react";
-import { getBillById, updateBill, updateBillStatus } from "../services/bills.service";
+import { getBillById, updateBill, updateBillStatus, type ServiceError } from "../services/bills.service";
 import { createVendor, listVendors } from "../services/vendors.service";
 import { confirmDiscardChanges } from "../lib/alerts";
 import type { PaymentMethod, PriorityLevel, Vendor } from "../types/billing";
@@ -28,6 +28,7 @@ export function EditBillPage() {
   const [vendorOptions, setVendorOptions] = useState<Vendor[]>([]);
   const [isVendorLoading, setIsVendorLoading] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState("");
+  const [referenceError, setReferenceError] = useState<string | null>(null);
   const [requestDate, setRequestDate] = useState("");
   const [priority, setPriority] = useState("Standard");
   const [reasonForPayment, setReasonForPayment] = useState("");
@@ -57,6 +58,8 @@ export function EditBillPage() {
     }
   };
   const canEdit = billStatus === "draft" || billStatus === "awaiting_approval";
+  const isDuplicatePrfError = (error: string | ServiceError | null | undefined) =>
+    typeof error === "object" && error?.code === "DUPLICATE_PRF";
   useEffect(() => {
     let isMounted = true;
     if (!id) {
@@ -247,6 +250,7 @@ export function EditBillPage() {
       setErrorMessage("This bill can no longer be edited.");
       return;
     }
+    setReferenceError(null);
     if (!vendorInput.trim()) {
       setErrorMessage("Vendor name is required.");
       return;
@@ -320,7 +324,14 @@ export function EditBillPage() {
     const result = await updateBill(id, payload);
     setIsSaving(false);
     if (result.error) {
-      setErrorMessage(result.error || "Failed to update bill.");
+      if (isDuplicatePrfError(result.error)) {
+        setReferenceError(
+          "Warning: PRF already existing. Please choose another PRF or leave blank to auto-generate."
+        );
+        return;
+      }
+      const message = typeof result.error === "string" ? result.error : result.error?.message;
+      setErrorMessage(message || "Failed to update bill.");
       return;
     }
     navigate(`/bills/${id}`);
@@ -474,13 +485,37 @@ export function EditBillPage() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1.5">
+                    <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Reference Number
                     </label>
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
-                      {referenceNumber}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Reference number cannot be edited</p>
+                    {canEdit ? (
+                      <>
+                        <input
+                          type="text"
+                          id="reference"
+                          value={referenceNumber}
+                          onChange={(e) => {
+                            setReferenceNumber(e.target.value);
+                            setReferenceError(null);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Optional"
+                        />
+                        {referenceError ? (
+                          <p className="text-xs text-red-600 mt-1">{referenceError}</p>
+                        ) : (
+                          <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate.</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">Format hint: MMDDYY-###</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                          {referenceNumber}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Reference number cannot be edited</p>
+                      </>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="requestDate" className="block text-sm font-medium text-gray-700 mb-1.5">

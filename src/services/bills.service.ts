@@ -16,6 +16,12 @@ export interface ListBillsParams {
   pageSize?: number;
 }
 
+export type ServiceError =
+  | {
+      code: "DUPLICATE_PRF";
+      message: string;
+    };
+
 export async function listBills(params: ListBillsParams) {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? 10;
@@ -149,8 +155,14 @@ export async function isReferenceNoTaken(referenceNo: string, excludeBillId?: st
 function mapDbError(error: PostgrestError | null | undefined, fallback: string) {
   if (!error) return fallback;
 
-  if (error.code === "23505" && error.message.includes("bills_reference_no_unique")) {
-    return "Reference number already exists. Please use a different reference number.";
+  if (error.code === "23505") {
+    const details = error.details || error.message || "";
+    if (details.includes("reference_no") || details.includes("bills_reference_no_unique")) {
+      return {
+        code: "DUPLICATE_PRF",
+        message: "PRF already existing"
+      } satisfies ServiceError;
+    }
   }
 
   if (error.code === "23514" && error.message.includes("bill_breakdowns_payment_method_check")) {
