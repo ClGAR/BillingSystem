@@ -73,8 +73,41 @@ export async function listBills(params: ListBillsParams) {
     return { data: [], count: 0, error: error.message };
   }
 
+  const bills = (data ?? []) as Array<Bill & { vendor?: { id: string; name: string } }>;
+
+  if (bills.length === 0) {
+    return {
+      data: bills as Array<Bill & { vendor?: { id: string; name: string }; payment_methods: string[] }>,
+      count: count ?? 0,
+      error: null as string | null
+    };
+  }
+
+  const billIds = bills.map((bill) => bill.id);
+  const { data: breakdowns, error: breakdownError } = await supabase
+    .from("bill_breakdowns")
+    .select("bill_id,payment_method")
+    .in("bill_id", billIds);
+
+  if (breakdownError) {
+    return { data: [], count: 0, error: breakdownError.message };
+  }
+
+  const paymentMethodsByBill = new Map<string, Set<string>>();
+  (breakdowns ?? []).forEach((breakdown) => {
+    if (!paymentMethodsByBill.has(breakdown.bill_id)) {
+      paymentMethodsByBill.set(breakdown.bill_id, new Set());
+    }
+    if (breakdown.payment_method) {
+      paymentMethodsByBill.get(breakdown.bill_id)?.add(breakdown.payment_method);
+    }
+  });
+
   return {
-    data: (data ?? []) as Array<Bill & { vendor?: { id: string; name: string } }>,
+    data: bills.map((bill) => ({
+      ...bill,
+      payment_methods: Array.from(paymentMethodsByBill.get(bill.id) ?? [])
+    })) as Array<Bill & { vendor?: { id: string; name: string }; payment_methods: string[] }>,
     count: count ?? 0,
     error: null as string | null
   };
@@ -120,8 +153,8 @@ function mapDbError(error: PostgrestError | null | undefined, fallback: string) 
     return "Reference number already exists. Please use a different reference number.";
   }
 
-  if (error.code === "23514" && error.message.includes("bill_breakdowns_category_check")) {
-    return "One or more breakdown categories are invalid.";
+  if (error.code === "23514" && error.message.includes("bill_breakdowns_payment_method_check")) {
+    return "One or more breakdown payment methods are invalid.";
   }
 
   if (error.code === "42501") {
@@ -152,7 +185,16 @@ export async function getBillById(id: string) {
       created_at,
       updated_at,
       vendor:vendors(id,name,address),
-      breakdowns:bill_breakdowns(id,bill_id,category,description,amount)
+      breakdowns:bill_breakdowns(
+        id,
+        bill_id,
+        payment_method,
+        description,
+        amount,
+        bank_name,
+        bank_account_name,
+        bank_account_no
+      )
     `
     )
     .eq("id", id)
@@ -227,9 +269,12 @@ export async function createBill(payload: CreateBillPayload) {
 
   const breakdowns = payload.breakdowns.map((b) => ({
     bill_id: bill.id,
-    category: b.category,
+    payment_method: b.payment_method,
     description: b.description ?? "",
-    amount: Number.isFinite(b.amount) ? b.amount : 0
+    amount: Number.isFinite(b.amount) ? b.amount : 0,
+    bank_name: b.payment_method === "bank_transfer" ? b.bank_name ?? null : null,
+    bank_account_name: b.payment_method === "bank_transfer" ? b.bank_account_name ?? null : null,
+    bank_account_no: b.payment_method === "bank_transfer" ? b.bank_account_no ?? null : null
   }));
 
   if (breakdowns.length > 0) {
@@ -297,9 +342,12 @@ export async function updateBill(id: string, payload: UpdateBillPayload) {
 
   const breakdowns = payload.breakdowns.map((b) => ({
     bill_id: id,
-    category: b.category,
+    payment_method: b.payment_method,
     description: b.description ?? "",
-    amount: Number.isFinite(b.amount) ? b.amount : 0
+    amount: Number.isFinite(b.amount) ? b.amount : 0,
+    bank_name: b.payment_method === "bank_transfer" ? b.bank_name ?? null : null,
+    bank_account_name: b.payment_method === "bank_transfer" ? b.bank_account_name ?? null : null,
+    bank_account_no: b.payment_method === "bank_transfer" ? b.bank_account_no ?? null : null
   }));
 
   if (breakdowns.length > 0) {
