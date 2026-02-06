@@ -37,10 +37,25 @@ const formCards: FormCardItem[] = [
   },
 ];
 
-const toneStyles: Record<FormTone, { icon: string; iconBg: string }> = {
-  blue: { icon: "text-blue-600", iconBg: "bg-blue-100/80" },
-  green: { icon: "text-green-600", iconBg: "bg-green-100/80" },
-  purple: { icon: "text-purple-600", iconBg: "bg-purple-100/80" },
+const toneStyles: Record<FormTone, { icon: string; iconBg: string; border: string; ring: string }> = {
+  blue: {
+    icon: "text-blue-600",
+    iconBg: "bg-blue-100/80",
+    border: "border-blue-500",
+    ring: "focus-visible:ring-blue-400/40",
+  },
+  green: {
+    icon: "text-green-600",
+    iconBg: "bg-green-100/80",
+    border: "border-green-500",
+    ring: "focus-visible:ring-green-400/40",
+  },
+  purple: {
+    icon: "text-purple-600",
+    iconBg: "bg-purple-100/80",
+    border: "border-purple-500",
+    ring: "focus-visible:ring-purple-400/40",
+  },
 };
 
 type FormCardProps = FormCardItem & {
@@ -54,10 +69,12 @@ function FormCard({ title, subtitle, to, icon: Icon, tone, isActive }: FormCardP
     <Link
       to={to}
       className={cn(
-        "group bg-white border rounded-2xl px-6 py-10 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40",
-        isActive ? "border-green-500 shadow-md" : "border-gray-200",
+        "group bg-white border-2 rounded-2xl px-6 py-10 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2",
+        styles.border,
+        styles.ring,
+        isActive ? "shadow-md" : "shadow-sm",
       )}
-      aria-current={isActive ? \"page\" : undefined}
+      aria-current={isActive ? "page" : undefined}
     >
       <div
         className={cn(
