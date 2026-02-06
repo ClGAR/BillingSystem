@@ -135,26 +135,26 @@ export function SpecialCompanyEventsForm() {
             <div className="form-toolbar__left">
               <button
                 onClick={() => navigate("/event-forms")}
-                className="form-btn-back"
+                className="toolbar-btn toolbar-btn--back"
               >
                 <ArrowLeft className="form-btn__icon" />
                 Back to Forms
               </button>
             </div>
             <div className="form-toolbar__right">
-              <button onClick={handleLoad} className="form-btn">
+              <button onClick={handleLoad} className="toolbar-btn">
                 <Download className="form-btn__icon" />
                 Load
               </button>
-              <button onClick={handleClear} className="form-btn">
+              <button onClick={handleClear} className="toolbar-btn">
                 <Trash2 className="form-btn__icon" />
                 Clear
               </button>
-              <button onClick={handlePrint} className="form-btn">
+              <button onClick={handlePrint} className="toolbar-btn">
                 <Printer className="form-btn__icon" />
                 Print
               </button>
-              <button onClick={handleSave} className="form-btn form-btn--primary">
+              <button onClick={handleSave} className="toolbar-btn">
                 <Save className="form-btn__icon" />
                 Save
               </button>
