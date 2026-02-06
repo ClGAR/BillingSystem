@@ -130,37 +130,29 @@ export function SpecialCompanyEventsForm() {
     <div className="min-h-screen bg-gray-50">
       <div className="pt-16">
         <div className="max-w-[1440px] mx-auto px-6 py-8">
-          <div className="form-toolbar flex flex-wrap items-center gap-3 mb-6">
-            <button
-              onClick={handleSave}
-              className="form-btn form-btn--primary"
-            >
-              Save
-            </button>
-            <button
-              onClick={handleLoad}
-              className="form-btn"
-            >
-              Load
-            </button>
-            <button
-              onClick={handleClear}
-              className="form-btn"
-            >
-              Clear
-            </button>
-            <button
-              onClick={handlePrint}
-              className="form-btn"
-            >
-              Print
-            </button>
-            <button
-              onClick={() => navigate("/event-forms")}
-              className="form-btn"
-            >
-              Back to Forms
-            </button>
+          <div className="form-toolbar">
+            <div className="form-toolbar__left">
+              <button onClick={handleSave} className="form-btn form-btn--primary">
+                Save
+              </button>
+              <button onClick={handleLoad} className="form-btn">
+                Load
+              </button>
+              <button onClick={handleClear} className="form-btn">
+                Clear
+              </button>
+              <button onClick={handlePrint} className="form-btn">
+                Print
+              </button>
+            </div>
+            <div className="form-toolbar__right">
+              <button
+                onClick={() => navigate("/event-forms")}
+                className="form-btn-back"
+              >
+                ← Back to Forms
+              </button>
+            </div>
           </div>
 
           <div className="form-paper mx-auto">
