@@ -2227,3 +2227,135 @@ html {
     inset: 0 auto auto 0;
   }
 }
+
+.prospect-paper {
+  max-width: 820px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  font-size: 12px;
+  color: #111;
+}
+
+.prospect-header {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 10px;
+}
+
+.prospect-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #000;
+  table-layout: fixed;
+}
+
+.prospect-table th,
+.prospect-table td {
+  border: 1px solid #000;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.prospect-table th {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left;
+  height: 30px;
+  padding: 4px 6px;
+  line-height: 1.15;
+}
+
+.prospect-table td {
+  height: 26px;
+}
+
+.prospect-table td input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.prospect-table th:nth-child(1) {
+  width: 19%;
+}
+
+.prospect-table th:nth-child(2) {
+  width: 19%;
+}
+
+.prospect-table th:nth-child(3) {
+  width: 20%;
+}
+
+.prospect-table th:nth-child(4) {
+  width: 20%;
+}
+
+.prospect-table th:nth-child(5) {
+  width: 22%;
+}
+
+@media (max-width: 880px) {
+  .prospect-paper {
+    padding: 18px;
+  }
+}
+
+@media print {
+  .prospect-page {
+    background: #fff !important;
+  }
+
+  .prospect-page .form-toolbar {
+    display: none !important;
+  }
+
+  .prospect-page .pt-16,
+  .prospect-page .max-w-\[1440px\],
+  .prospect-page .px-6,
+  .prospect-page .py-8 {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .prospect-page .prospect-paper {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    margin: 0 auto !important;
+    width: 100%;
+    max-width: 820px;
+  }
+
+  .prospect-table,
+  .prospect-table th,
+  .prospect-table td {
+    border-color: #000 !important;
+  }
+
+  .prospect-table tr {
+    page-break-inside: avoid;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .prospect-print-area,
+  .prospect-print-area * {
+    visibility: visible;
+  }
+
+  .prospect-print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+  }
+}
