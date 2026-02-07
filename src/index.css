@@ -2166,27 +2166,27 @@ html {
 }
 
 .event-request-right-col .rightColSection {
-  margin-top: 16px;
+  margin-top: 24px;
 }
 
 .event-request-right-col .event-request-row.fieldRow {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .event-request-right-col .event-request-row.fieldRowTight {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .event-request-right-col .fieldGroupGap {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .event-request-right-col .testimonyBlock {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .event-request-right-col .testimonyRow {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 @media (max-width: 880px) {
