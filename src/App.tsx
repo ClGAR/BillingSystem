@@ -9,6 +9,7 @@ import { CreateBillPage } from './components/CreateBillPage';
 import { ViewBillPage } from './components/ViewBillPage';
 import { EditBillPage } from './components/EditBillPage';
 import { EventFormsHome } from './components/EventFormsHome';
+import { EventRequestForm } from './components/EventRequestForm';
 import { SpecialCompanyEventsForm } from './components/SpecialCompanyEventsForm';
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/bills/:id" element={<ViewBillPage />} />
         <Route path="/bills/:id/edit" element={<EditBillPage />} />
         <Route path="/event-forms" element={<EventFormsHome />} />
+        <Route path="/forms/event-request" element={<EventRequestForm />} />
         <Route path="/forms/special-company-events" element={<SpecialCompanyEventsForm />} />
         </Route>
       </Route>
