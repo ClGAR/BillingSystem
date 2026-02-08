@@ -137,14 +137,16 @@ export function EventFormsHome() {
 
           <EventFormsTabs activeTab={activeTab} onChange={setTab} />
 
-          <div className="flex flex-col gap-2 md:gap-0 md:flex-row md:items-end md:justify-end mb-6">
-            <EventFormsToolbar
-              onSave={() => runActive("getState")}
-              onLoad={() => runActive("setState")}
-              onClear={() => runActive("resetState")}
-              onPrint={handlePrint}
-            />
-          </div>
+          {activeTab !== "special" ? (
+            <div className="flex flex-col gap-2 md:gap-0 md:flex-row md:items-end md:justify-end mb-6">
+              <EventFormsToolbar
+                onSave={() => runActive("getState")}
+                onLoad={() => runActive("setState")}
+                onClear={() => runActive("resetState")}
+                onPrint={handlePrint}
+              />
+            </div>
+          ) : null}
 
           <div className="space-y-5">
             <div className={activeTab === "special" ? "block" : "hidden"}>

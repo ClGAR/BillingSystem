@@ -322,27 +322,6 @@ export function SpecialCompanyEventsForm({
               ) : (
                 <div />
               )}
-              <div className="form-actions no-print">
-                <FormActionButton onClick={handleSave}>
-                  <Save className="form-btn__icon" />
-                  Save
-                </FormActionButton>
-                <FormActionButton onClick={handleLoad}>
-                  <Download className="form-btn__icon" />
-                  Load
-                </FormActionButton>
-                <FormActionButton onClick={handleClear}>
-                  <Trash2 className="form-btn__icon" />
-                  Clear
-                </FormActionButton>
-                <FormActionButton onClick={handlePrint}>
-                  <Printer className="form-btn__icon" />
-                  Print
-                </FormActionButton>
-                <span className="print-hint no-print">
-                  Disable Headers and Footers in the print dialog for best results.
-                </span>
-              </div>
             </div>
           )}
 
@@ -442,6 +421,28 @@ export function SpecialCompanyEventsForm({
                   />
                 </label>
               </div>
+            </div>
+
+            <div className="special-actions no-print">
+              <FormActionButton onClick={handleSave}>
+                <Save className="form-btn__icon" />
+                Save
+              </FormActionButton>
+              <FormActionButton onClick={handleLoad}>
+                <Download className="form-btn__icon" />
+                Load
+              </FormActionButton>
+              <FormActionButton onClick={handleClear}>
+                <Trash2 className="form-btn__icon" />
+                Clear
+              </FormActionButton>
+              <FormActionButton onClick={handlePrint}>
+                <Printer className="form-btn__icon" />
+                Print
+              </FormActionButton>
+              <span className="print-hint no-print">
+                Disable Headers and Footers in the print dialog for best results.
+              </span>
             </div>
           </div>
 
