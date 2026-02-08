@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { AutoGrowTextarea } from "./AutoGrowTextarea";
+import { FormActionButton } from "./ui/FormActionButton";
 import "./EventRequestForm.css";
 
 type EventType = "" | "meeting" | "workshop";
@@ -258,16 +259,16 @@ export function EventRequestForm({ showBackButton = true, embedded = false, onRe
         <div className={embedded ? "" : "erf-shell max-w-[1440px] mx-auto px-4 md:px-6 py-6 md:py-8"}>
           <div className="erf-header-actions no-print">
             {showBackButton ? (
-              <button type="button" onClick={() => navigate("/event-forms")} className="erf-back-btn">
+              <FormActionButton type="button" onClick={() => navigate("/event-forms")} className="erf-back-btn">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Forms
-              </button>
+              </FormActionButton>
             ) : (
               <div />
             )}
-            <button type="button" className="erf-button" onClick={() => window.print()}>
+            <FormActionButton type="button" className="erf-button" onClick={() => window.print()}>
               Print
-            </button>
+            </FormActionButton>
           </div>
 
           <div className="screen-form no-print">

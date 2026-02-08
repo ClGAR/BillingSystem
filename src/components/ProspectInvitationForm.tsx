@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Printer, Save, Trash2 } from "lucide-react";
+import { FormActionButton } from "./ui/FormActionButton";
 
 type ProspectRow = {
   leaderName: string;
@@ -126,37 +127,37 @@ export function ProspectInvitationForm({
       <div className={embedded ? "" : "pt-16"}>
         <div className={embedded ? "" : "max-w-[1440px] mx-auto px-6 py-8"}>
           {showToolbar && (
-            <div className="form-toolbar">
+            <div className="form-toolbar no-print">
               {showBackButton ? (
                 <div className="form-toolbar__left">
-                  <button
+                  <FormActionButton
                     onClick={() => navigate("/event-forms")}
-                    className="toolbar-btn toolbar-btn--back"
+                    className="form-action-back"
                   >
                     <ArrowLeft className="form-btn__icon" />
                     Back to Forms
-                  </button>
+                  </FormActionButton>
                 </div>
               ) : (
                 <div />
               )}
               <div className="form-toolbar__right">
-                <button onClick={handleSave} className="toolbar-btn">
+                <FormActionButton onClick={handleSave}>
                   <Save className="form-btn__icon" />
                   Save
-                </button>
-                <button onClick={handleLoad} className="toolbar-btn">
+                </FormActionButton>
+                <FormActionButton onClick={handleLoad}>
                   <Download className="form-btn__icon" />
                   Load
-                </button>
-                <button onClick={handleClear} className="toolbar-btn">
+                </FormActionButton>
+                <FormActionButton onClick={handleClear}>
                   <Trash2 className="form-btn__icon" />
                   Clear
-                </button>
-                <button onClick={handlePrint} className="toolbar-btn">
+                </FormActionButton>
+                <FormActionButton onClick={handlePrint}>
                   <Printer className="form-btn__icon" />
                   Print
-                </button>
+                </FormActionButton>
               </div>
             </div>
           )}

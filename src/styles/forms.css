@@ -1,0 +1,60 @@
+.btn-pill {
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  color: #111827;
+  border-radius: 9999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.btn-pill:hover {
+  background: rgba(0, 0, 0, 0.035);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.btn-pill:active {
+  transform: translateY(0.5px);
+}
+
+.btn-pill:focus {
+  outline: none;
+}
+
+.btn-pill:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+  outline-offset: 2px;
+}
+
+.btn-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-pill {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #f3f4f6;
+  }
+
+  .btn-pill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .btn-pill:focus-visible {
+    outline-color: rgba(255, 255, 255, 0.3);
+  }
+}
