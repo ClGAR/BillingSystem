@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Printer, Save, Trash2 } from "lucide-react";
+import "./SpecialCompanyEventsForm.css";
 
 type ChecklistRow = {
   id: string;
@@ -64,6 +65,8 @@ type FormState = {
   eventDate: string;
   location: string;
   speaker: string;
+  preparedByName: string;
+  checkedByName: string;
   checks: Record<string, boolean>;
 };
 
@@ -78,6 +81,8 @@ const initialState: FormState = {
   eventDate: "",
   location: "",
   speaker: "",
+  preparedByName: "",
+  checkedByName: "",
   checks: createInitialChecks(),
 };
 
@@ -100,6 +105,8 @@ const normalizeSpecialCompanyEventsState = (value: unknown): FormState => {
     eventDate: typeof parsed.eventDate === "string" ? parsed.eventDate : "",
     location: typeof parsed.location === "string" ? parsed.location : "",
     speaker: typeof parsed.speaker === "string" ? parsed.speaker : "",
+    preparedByName: typeof parsed.preparedByName === "string" ? parsed.preparedByName : "",
+    checkedByName: typeof parsed.checkedByName === "string" ? parsed.checkedByName : "",
     checks: normalizedChecks,
   };
 };
@@ -114,6 +121,14 @@ type SpecialCompanyEventsFormProps = {
     resetState: () => void;
   }) => void;
 };
+
+function mark(checked: boolean) {
+  return checked ? "☑" : "☐";
+}
+
+function printText(value: string) {
+  return value.trim() || "\u00A0";
+}
 
 export function SpecialCompanyEventsForm({
   showBackButton = true,
@@ -172,17 +187,14 @@ export function SpecialCompanyEventsForm({
   }, [onRegisterActions, formState]);
 
   return (
-    <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
+    <div className={embedded ? "sce-page" : "sce-page min-h-screen bg-gray-50"}>
       <div className={embedded ? "" : "pt-16"}>
         <div className={embedded ? "" : "max-w-[1440px] mx-auto px-6 py-8"}>
           {showToolbar && (
-            <div className="form-toolbar">
+            <div className="form-toolbar no-print">
               {showBackButton ? (
                 <div className="form-toolbar__left">
-                  <button
-                    onClick={() => navigate("/event-forms")}
-                    className="toolbar-btn toolbar-btn--back"
-                  >
+                  <button onClick={() => navigate("/event-forms")} className="toolbar-btn toolbar-btn--back">
                     <ArrowLeft className="form-btn__icon" />
                     Back to Forms
                   </button>
@@ -211,94 +223,148 @@ export function SpecialCompanyEventsForm({
             </div>
           )}
 
-          <div className="form-paper special-company-events-print-area mx-auto">
-            <div className="form-title">
-              <div className="form-title__line form-title__primary">SPECIAL COMPANY EVENTS</div>
-              <div className="form-title__line">(with speaker)</div>
-              <div className="form-title__line form-title__secondary">FLOW CHECKLIST:</div>
+          <div className="screen-form no-print">
+            <div className="sce-screen-head">
+              <h1>SPECIAL COMPANY EVENTS (with speaker) FLOW CHECKLIST</h1>
             </div>
 
-            <div className="form-fields">
-              <label className="form-field">
-                <span>Event Details:</span>
+            <div className="sce-top-grid">
+              <label className="sce-field">
+                <span>Event Details</span>
                 <input
                   type="text"
                   value={formState.eventDetails}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, eventDetails: event.target.value }))
-                  }
+                  onChange={(event) => setFormState((prev) => ({ ...prev, eventDetails: event.target.value }))}
                 />
               </label>
-              <label className="form-field">
-                <span>Event Date:</span>
+              <label className="sce-field">
+                <span>Event Date</span>
                 <input
-                  type="text"
-                  placeholder="dd/mm/yyyy"
+                  type="date"
                   value={formState.eventDate}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, eventDate: event.target.value }))
-                  }
+                  onChange={(event) => setFormState((prev) => ({ ...prev, eventDate: event.target.value }))}
                 />
               </label>
-              <label className="form-field">
-                <span>Location/Address:</span>
+              <label className="sce-field sce-field-full">
+                <span>Location/Address</span>
                 <input
                   type="text"
                   value={formState.location}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, location: event.target.value }))
-                  }
+                  onChange={(event) => setFormState((prev) => ({ ...prev, location: event.target.value }))}
                 />
               </label>
             </div>
 
-            <table className="form-table">
-              <thead>
-                <tr>
-                  <th>Step</th>
-                  <th>Assigned Personal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <div className="form-step">
-                        <input
-                          type="checkbox"
-                          checked={formState.checks[row.id] || false}
-                          onChange={(event) => updateCheck(row.id, event.target.checked)}
-                        />
-                        <span>{row.step}</span>
-                      </div>
-                    </td>
-                    <td>
-                      {row.isSpeaker ? (
-                        <input
-                          type="text"
-                          value={formState.speaker}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, speaker: event.target.value }))
-                          }
-                          className="form-inline-input"
-                        />
-                      ) : (
-                        <span>{row.assigned}</span>
-                      )}
-                    </td>
+            <div className="sce-table-wrap">
+              <table className="sce-table">
+                <thead>
+                  <tr>
+                    <th>Step</th>
+                    <th>Assigned Personal</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <label className="sce-step">
+                          <input
+                            type="checkbox"
+                            checked={formState.checks[row.id] || false}
+                            onChange={(event) => updateCheck(row.id, event.target.checked)}
+                          />
+                          <span>{row.step}</span>
+                        </label>
+                      </td>
+                      <td>
+                        {row.isSpeaker ? (
+                          <input
+                            type="text"
+                            value={formState.speaker}
+                            onChange={(event) => setFormState((prev) => ({ ...prev, speaker: event.target.value }))}
+                            className="sce-inline-input"
+                          />
+                        ) : (
+                          <span>{row.assigned}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            <div className="form-footer">
-              <div>
-                <div className="form-footer__label">Prepared by:</div>
-                <div className="form-footer__line">Name</div>
+            <div className="sce-foot-grid">
+              <label className="sce-field">
+                <span>Prepared by (Name)</span>
+                <input
+                  type="text"
+                  value={formState.preparedByName}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, preparedByName: event.target.value }))}
+                />
+              </label>
+              <label className="sce-field">
+                <span>Checked by (Name)</span>
+                <input
+                  type="text"
+                  value={formState.checkedByName}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, checkedByName: event.target.value }))}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="print-only print-root">
+            <div className="sce-print-paper">
+              <div className="sce-print-title">
+                <div>SPECIAL COMPANY EVENTS</div>
+                <div>(with speaker)</div>
+                <div>FLOW CHECKLIST</div>
               </div>
-              <div>
-                <div className="form-footer__label">Checked by:</div>
-                <div className="form-footer__line">Name</div>
+
+              <div className="sce-print-top">
+                <div className="sce-print-line">
+                  <span className="sce-print-label">Event Details:</span>
+                  <span className="sce-print-value">{printText(formState.eventDetails)}</span>
+                </div>
+                <div className="sce-print-line">
+                  <span className="sce-print-label">Event Date:</span>
+                  <span className="sce-print-value">{printText(formState.eventDate)}</span>
+                </div>
+                <div className="sce-print-line">
+                  <span className="sce-print-label">Location/Address:</span>
+                  <span className="sce-print-value">{printText(formState.location)}</span>
+                </div>
+              </div>
+
+              <table className="sce-print-table form-section">
+                <thead>
+                  <tr>
+                    <th>Step</th>
+                    <th>Assigned Personal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <span className="sce-print-check">{mark(Boolean(formState.checks[row.id]))}</span> {row.step}
+                      </td>
+                      <td>{row.isSpeaker ? printText(formState.speaker) : printText(row.assigned)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="sce-print-footer">
+                <div className="sce-print-line">
+                  <span className="sce-print-label">Prepared by:</span>
+                  <span className="sce-print-value">{printText(formState.preparedByName)}</span>
+                </div>
+                <div className="sce-print-line">
+                  <span className="sce-print-label">Checked by:</span>
+                  <span className="sce-print-value">{printText(formState.checkedByName)}</span>
+                </div>
               </div>
             </div>
           </div>
