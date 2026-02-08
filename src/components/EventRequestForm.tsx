@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Printer, Save, Trash2 } from "lucide-react";
 import { AutoGrowTextarea } from "./AutoGrowTextarea";
 import { FormActionButton } from "./ui/FormActionButton";
+import { logPrint, upsertSubmissionForPrint } from "../services/formPrintTracking.service";
 import "./EventRequestForm.css";
 
 type EventType = "" | "meeting" | "workshop";
@@ -231,6 +232,10 @@ export function EventRequestForm({
   const navigate = useNavigate();
   const [formState, setFormState] = useState<EventRequestFormState>(initialState);
   const [showValidation, setShowValidation] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [referenceNo, setReferenceNo] = useState<string | null>(null);
+  const [printedAt, setPrintedAt] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const validationErrors = useMemo(
     () => (showValidation ? getValidationErrors(formState) : {}),
@@ -277,8 +282,42 @@ export function EventRequestForm({
     handleReset();
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (isPrinting) return;
+    setIsPrinting(true);
+    const now = new Date().toLocaleString();
+    setPrintedAt(now);
+
+    try {
+      const upsert = await upsertSubmissionForPrint({
+        submissionId,
+        formType: "ER",
+        payload: formState as Record<string, unknown>,
+      });
+
+      if (upsert.error || !upsert.data) {
+        window.alert(upsert.error || "Failed to save print submission.");
+        return;
+      }
+
+      setSubmissionId(upsert.data.id);
+      setReferenceNo(upsert.data.reference_no);
+
+      const logResult = await logPrint({
+        submissionId: upsert.data.id,
+        formType: "ER",
+        referenceNo: upsert.data.reference_no,
+      });
+
+      if (logResult.error) {
+        window.alert(logResult.error);
+        return;
+      }
+
+      window.print();
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   useEffect(() => {
@@ -296,10 +335,20 @@ export function EventRequestForm({
   const printRoot =
     showPrintRoot && typeof document !== "undefined"
       ? createPortal(
-          <div id="print-root" className="print-only">
-            <header className="print-header print-section">
-              <h1 className="print-title">EVENT REQUEST FORM</h1>
-              <p className="print-note">
+            <div id="print-root" className="print-only">
+              <div className="print-section">
+                <div className="print-line">
+                  <span className="print-label">Reference No:</span>
+                  <span className="print-value">{referenceNo ?? "—"}</span>
+                </div>
+                <div className="print-line">
+                  <span className="print-label">Date Printed:</span>
+                  <span className="print-value">{printedAt ?? new Date().toLocaleString()}</span>
+                </div>
+              </div>
+              <header className="print-header print-section">
+                <h1 className="print-title">EVENT REQUEST FORM</h1>
+                <p className="print-note">
                 IMPORTANT: ALL EVENT REQUEST SHOULD BE DONE 5 DAYS PRIOR AND ARE OPEN TO ALL GRINDERS GUILD
                 DISTRIBUTORS.
               </p>
@@ -770,7 +819,7 @@ export function EventRequestForm({
                   <Trash2 className="form-btn__icon" />
                   Clear
                 </FormActionButton>
-                <FormActionButton type="button" onClick={handlePrint}>
+                <FormActionButton type="button" onClick={handlePrint} disabled={isPrinting}>
                   <Printer className="form-btn__icon" />
                   Print
                 </FormActionButton>

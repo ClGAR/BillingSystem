@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Printer, Save, Trash2 } from "lucide-react";
 import { FormActionButton } from "./ui/FormActionButton";
+import { logPrint, upsertSubmissionForPrint } from "../services/formPrintTracking.service";
 import "./SpecialCompanyEventsForm.css";
 
 type StepDefinition = {
@@ -197,6 +198,10 @@ export function SpecialCompanyEventsForm({
 }: SpecialCompanyEventsFormProps) {
   const navigate = useNavigate();
   const [formState, setFormState] = useState<FormState>(initialState);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [referenceNo, setReferenceNo] = useState<string | null>(null);
+  const [printedAt, setPrintedAt] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const steps = useMemo(() => formState.steps, [formState.steps]);
 
@@ -231,8 +236,42 @@ export function SpecialCompanyEventsForm({
     localStorage.removeItem(storageKey);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (isPrinting) return;
+    setIsPrinting(true);
+    const now = new Date().toLocaleString();
+    setPrintedAt(now);
+
+    try {
+      const upsert = await upsertSubmissionForPrint({
+        submissionId,
+        formType: "SC",
+        payload: formState as Record<string, unknown>,
+      });
+
+      if (upsert.error || !upsert.data) {
+        window.alert(upsert.error || "Failed to save print submission.");
+        return;
+      }
+
+      setSubmissionId(upsert.data.id);
+      setReferenceNo(upsert.data.reference_no);
+
+      const logResult = await logPrint({
+        submissionId: upsert.data.id,
+        formType: "SC",
+        referenceNo: upsert.data.reference_no,
+      });
+
+      if (logResult.error) {
+        window.alert(logResult.error);
+        return;
+      }
+
+      window.print();
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   useEffect(() => {
@@ -247,6 +286,16 @@ export function SpecialCompanyEventsForm({
     showPrintRoot && typeof document !== "undefined"
       ? createPortal(
           <div id="print-root" className="print-only">
+            <div className="print-section">
+              <div className="print-line">
+                <span className="print-label">Reference No:</span>
+                <span className="print-value">{referenceNo ?? "—"}</span>
+              </div>
+              <div className="print-line">
+                <span className="print-label">Date Printed:</span>
+                <span className="print-value">{printedAt ?? new Date().toLocaleString()}</span>
+              </div>
+            </div>
             <div className="sce-print">
               <div className="sce-print-title print-title">
                 <div>SPECIAL COMPANY EVENTS</div>
@@ -439,7 +488,7 @@ export function SpecialCompanyEventsForm({
                   <Trash2 className="form-btn__icon" />
                   Clear
                 </FormActionButton>
-                <FormActionButton onClick={handlePrint}>
+                <FormActionButton onClick={handlePrint} disabled={isPrinting}>
                   <Printer className="form-btn__icon" />
                   Print
                 </FormActionButton>
