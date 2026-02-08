@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 import { AutoGrowTextarea } from "./AutoGrowTextarea";
-import { submitEventRequest } from "../services/eventRequests.service";
 import "./EventRequestForm.css";
 
 type EventType = "" | "meeting" | "workshop";
@@ -138,7 +136,6 @@ const getValidationErrors = (state: EventRequestFormState): EventRequestValidati
 type EventRequestFormProps = {
   showBackButton?: boolean;
   embedded?: boolean;
-  showToolbar?: boolean;
   onRegisterActions?: (actions: {
     getState: () => unknown;
     setState: (state: unknown) => void;
@@ -147,34 +144,34 @@ type EventRequestFormProps = {
   }) => void;
 };
 
-type LinedInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+type FormInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   requiredMark?: boolean;
   error?: string;
 };
 
-function LinedInput({ label, requiredMark, error, className = "", ...props }: LinedInputProps) {
+function FormInput({ label, requiredMark, error, className = "", ...props }: FormInputProps) {
   return (
     <label className="erf-field">
       <span className="erf-label">
         {label}
         {requiredMark ? <span className="erf-required">*</span> : null}
       </span>
-      <input className={`erf-lined-input ${className}`.trim()} {...props} />
+      <input className={`erf-input ${className}`.trim()} {...props} />
       {error ? <span className="erf-error">{error}</span> : null}
     </label>
   );
 }
 
-type LinedTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+type FormTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
 };
 
-function LinedTextarea({ label, className = "", ...props }: LinedTextareaProps) {
+function FormTextarea({ label, className = "", ...props }: FormTextareaProps) {
   return (
     <label className="erf-field">
       <span className="erf-label">{label}</span>
-      <AutoGrowTextarea className={`erf-lined-textarea ${className}`.trim()} {...props} />
+      <AutoGrowTextarea className={`erf-textarea ${className}`.trim()} {...props} />
     </label>
   );
 }
@@ -193,15 +190,35 @@ function FormSection({ title, children }: FormSectionProps) {
   );
 }
 
-export function EventRequestForm({
-  showBackButton = true,
-  embedded = false,
-  onRegisterActions,
-}: EventRequestFormProps) {
+function mark(checked: boolean) {
+  return checked ? "☑" : "☐";
+}
+
+function printText(value: string) {
+  return value.trim() || "\u00A0";
+}
+
+type PrintFieldProps = {
+  label: string;
+  value: string;
+  multiline?: boolean;
+};
+
+function PrintField({ label, value, multiline = false }: PrintFieldProps) {
+  return (
+    <div className={`print-field ${multiline ? "print-field-multiline" : ""}`}>
+      <div className="print-label">{label}</div>
+      <div className={`print-line ${multiline ? "print-line-multiline" : ""}`}>
+        <span className="print-value">{printText(value)}</span>
+      </div>
+    </div>
+  );
+}
+
+export function EventRequestForm({ showBackButton = true, embedded = false, onRegisterActions }: EventRequestFormProps) {
   const navigate = useNavigate();
   const [formState, setFormState] = useState<EventRequestFormState>(initialState);
   const [showValidation, setShowValidation] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validationErrors = useMemo(
     () => (showValidation ? getValidationErrors(formState) : {}),
@@ -223,38 +240,6 @@ export function EventRequestForm({
     localStorage.removeItem(storageKey);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setShowValidation(true);
-
-    const errors = getValidationErrors(formState);
-    if (Object.keys(errors).length > 0) return;
-
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        ...formState,
-        expectedAttendance: formState.expectedAttendance.trim() ? Number(formState.expectedAttendance) : null,
-      };
-
-      console.log("Event request payload", payload);
-      const { error } = await submitEventRequest(payload);
-
-      if (error) {
-        console.warn("Event request sync failed:", error);
-        toast.success("Event request submitted.");
-        return;
-      }
-
-      toast.success("Event request submitted.");
-    } catch (error) {
-      console.warn("Event request submit error:", error);
-      toast.success("Event request submitted.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   useEffect(() => {
     onRegisterActions?.({
       getState: () => formState,
@@ -270,90 +255,75 @@ export function EventRequestForm({
   return (
     <div className={embedded ? "erf-page" : "erf-page erf-page-standalone"}>
       <div className={embedded ? "" : "pt-16"}>
-        <div className={embedded ? "" : "max-w-[1440px] mx-auto px-4 md:px-6 py-6 md:py-8"}>
-          {showBackButton ? (
-            <div className="erf-header-actions no-print print-hide">
-              <div>
-                <button type="button" onClick={() => navigate("/event-forms")} className="erf-back-btn">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Forms
-                </button>
-              </div>
-              <div className="erf-header-actions__right">
-                <button type="button" className="erf-button erf-button-secondary" onClick={() => window.print()}>
-                  Print
-                </button>
-                <button type="button" className="erf-button erf-button-secondary" onClick={handleReset}>
-                  Reset
-                </button>
-                <button
-                  type="submit"
-                  form="event-request-form"
-                  className="erf-button erf-button-primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </button>
-              </div>
-            </div>
-          ) : null}
+        <div className={embedded ? "" : "erf-shell max-w-[1440px] mx-auto px-4 md:px-6 py-6 md:py-8"}>
+          <div className="erf-header-actions no-print">
+            {showBackButton ? (
+              <button type="button" onClick={() => navigate("/event-forms")} className="erf-back-btn">
+                <ArrowLeft className="w-4 h-4" />
+                Back to Forms
+              </button>
+            ) : (
+              <div />
+            )}
+            <button type="button" className="erf-button" onClick={() => window.print()}>
+              Print
+            </button>
+          </div>
 
-          <div className="print-root">
-            <form id="event-request-form" className="erf-paper mx-auto" onSubmit={handleSubmit}>
-              <header className="erf-top">
-                <h1>EVENT REQUEST FORM</h1>
-                <p>
-                  IMPORTANT: ALL EVENT REQUEST SHOULD BE DONE 5 DAYS PRIOR AND ARE OPEN TO ALL GRINDERS GUILD
-                  DISTRIBUTORS.
-                </p>
-              </header>
+          <div className="screen-form no-print">
+            <header className="erf-screen-top">
+              <h1>Event Request Form</h1>
+              <p>
+                Complete the details below. This is the interactive entry form. Print preview will generate the formal
+                filled document.
+              </p>
+            </header>
 
-              <div className="erf-columns">
-                <div className="erf-column">
-                  <FormSection title="1. CONTACT INFORMATION">
-                    <LinedInput
-                      label="Name"
-                      requiredMark
-                      value={formState.name}
-                      onChange={(e) => updateField("name", e.target.value)}
-                      error={validationErrors.name}
-                    />
-                    <LinedInput
-                      label="Organization/Department"
-                      value={formState.organizationDepartment}
-                      onChange={(e) => updateField("organizationDepartment", e.target.value)}
-                    />
-                    <LinedInput
-                      label="Phone No."
-                      requiredMark
-                      value={formState.phoneNo}
-                      onChange={(e) => updateField("phoneNo", e.target.value)}
-                      error={validationErrors.phoneNo}
-                    />
-                    <LinedInput
-                      label="Email Address"
-                      type="email"
-                      value={formState.emailAddress}
-                      onChange={(e) => updateField("emailAddress", e.target.value)}
-                      error={validationErrors.emailAddress}
-                    />
-                  </FormSection>
+            <div className="erf-columns">
+              <div className="erf-column">
+                <FormSection title="1. CONTACT INFORMATION">
+                  <FormInput
+                    label="Name"
+                    requiredMark
+                    value={formState.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    error={validationErrors.name}
+                  />
+                  <FormInput
+                    label="Organization/Department"
+                    value={formState.organizationDepartment}
+                    onChange={(e) => updateField("organizationDepartment", e.target.value)}
+                  />
+                  <FormInput
+                    label="Phone No."
+                    requiredMark
+                    value={formState.phoneNo}
+                    onChange={(e) => updateField("phoneNo", e.target.value)}
+                    error={validationErrors.phoneNo}
+                  />
+                  <FormInput
+                    label="Email Address"
+                    type="email"
+                    value={formState.emailAddress}
+                    onChange={(e) => updateField("emailAddress", e.target.value)}
+                    error={validationErrors.emailAddress}
+                  />
+                </FormSection>
 
-                  <FormSection title="2. EVENT DETAILS">
-                  <LinedInput
+                <FormSection title="2. EVENT DETAILS">
+                  <FormInput
                     label="Event Title"
                     requiredMark
                     value={formState.eventTitle}
                     onChange={(e) => updateField("eventTitle", e.target.value)}
                     error={validationErrors.eventTitle}
                   />
-                  <LinedTextarea
+                  <FormTextarea
                     label="Event Description"
                     rows={3}
                     value={formState.eventDescription}
                     onChange={(e) => updateField("eventDescription", e.target.value)}
                   />
-
                   <fieldset className="erf-choice-group">
                     <legend>Event Type (check one)</legend>
                     <label className="erf-choice">
@@ -375,18 +345,15 @@ export function EventRequestForm({
                       <span>Workshop - Grinders Distributors Orientation</span>
                     </label>
                   </fieldset>
-
-                  <LinedInput
+                  <FormInput
                     label="Date(s)"
                     requiredMark
-                    placeholder="e.g. 2026-02-12, 2026-02-14"
                     value={formState.eventDates}
                     onChange={(e) => updateField("eventDates", e.target.value)}
                     error={validationErrors.eventDates}
                   />
-
                   <div className="erf-inline-grid">
-                    <LinedInput
+                    <FormInput
                       label="Time: From"
                       requiredMark
                       type="time"
@@ -394,7 +361,7 @@ export function EventRequestForm({
                       onChange={(e) => updateField("timeFrom", e.target.value)}
                       error={validationErrors.timeFrom}
                     />
-                    <LinedInput
+                    <FormInput
                       label="To"
                       requiredMark
                       type="time"
@@ -403,7 +370,6 @@ export function EventRequestForm({
                       error={validationErrors.timeTo}
                     />
                   </div>
-
                   <fieldset className="erf-choice-group">
                     <legend>Is this a recurring event?</legend>
                     <div className="erf-yes-no-row">
@@ -427,21 +393,20 @@ export function EventRequestForm({
                       </label>
                     </div>
                   </fieldset>
-
-                  <LinedInput
+                  <FormInput
                     label="If Yes, please specify recurrence"
                     value={formState.recurrenceDetails}
                     onChange={(e) => updateField("recurrenceDetails", e.target.value)}
                   />
-                  </FormSection>
+                </FormSection>
 
-                  <FormSection title="3. LOCATION & SET-UP NEEDS">
-                  <LinedInput
+                <FormSection title="3. LOCATION & SET-UP NEEDS">
+                  <FormInput
                     label="Preferred Venue/Room"
                     value={formState.preferredVenueRoom}
                     onChange={(e) => updateField("preferredVenueRoom", e.target.value)}
                   />
-                  <LinedInput
+                  <FormInput
                     label="Expected attendance"
                     type="number"
                     min={0}
@@ -449,7 +414,6 @@ export function EventRequestForm({
                     onChange={(e) => updateField("expectedAttendance", e.target.value)}
                     error={validationErrors.expectedAttendance}
                   />
-
                   <fieldset className="erf-choice-group">
                     <legend>Room Set-Up Required</legend>
                     <label className="erf-choice">
@@ -461,7 +425,6 @@ export function EventRequestForm({
                       <span>Classroom Style</span>
                     </label>
                   </fieldset>
-
                   <fieldset className="erf-choice-group">
                     <legend>Audio/Visual Requirements</legend>
                     <div className="erf-av-list">
@@ -519,7 +482,7 @@ export function EventRequestForm({
                       </label>
                     </div>
                     {formState.avOthersChecked ? (
-                      <LinedInput
+                      <FormInput
                         label="Specify others"
                         value={formState.avOthersText}
                         onChange={(e) => updateField("avOthersText", e.target.value)}
@@ -527,11 +490,11 @@ export function EventRequestForm({
                       />
                     ) : null}
                   </fieldset>
-                  </FormSection>
-                </div>
+                </FormSection>
+              </div>
 
-                <div className="erf-column">
-                  <FormSection title="4. ADDITIONAL SERVICES (IF Applicable)">
+              <div className="erf-column">
+                <FormSection title="4. ADDITIONAL SERVICES (IF Applicable)">
                   <fieldset className="erf-choice-group">
                     <legend>Catering Needed?</legend>
                     <div className="erf-yes-no-row">
@@ -555,12 +518,11 @@ export function EventRequestForm({
                       </label>
                     </div>
                   </fieldset>
-                  <LinedInput
+                  <FormInput
                     label="If Yes, specify"
                     value={formState.cateringSpecify}
                     onChange={(e) => updateField("cateringSpecify", e.target.value)}
                   />
-
                   <fieldset className="erf-choice-group">
                     <legend>Security</legend>
                     <div className="erf-yes-no-row">
@@ -584,17 +546,17 @@ export function EventRequestForm({
                       </label>
                     </div>
                   </fieldset>
-                  </FormSection>
+                </FormSection>
 
-                  <FormSection title="5. AUTHORIZATION & SUBMISSION">
-                  <LinedInput
+                <FormSection title="5. AUTHORIZATION & SUBMISSION">
+                  <FormInput
                     label="Requested By"
                     requiredMark
                     value={formState.requestedBy}
                     onChange={(e) => updateField("requestedBy", e.target.value)}
                     error={validationErrors.requestedBy}
                   />
-                  <LinedInput
+                  <FormInput
                     label="Date Of Request"
                     requiredMark
                     type="date"
@@ -602,46 +564,37 @@ export function EventRequestForm({
                     onChange={(e) => updateField("dateOfRequest", e.target.value)}
                     error={validationErrors.dateOfRequest}
                   />
-                  <LinedInput
+                  <FormInput
                     label="Signature / Full Name"
                     value={formState.signature}
                     onChange={(e) => updateField("signature", e.target.value)}
                   />
-                  <LinedInput
+                  <FormInput
                     label="Organizer"
                     value={formState.organizer}
                     onChange={(e) => updateField("organizer", e.target.value)}
                   />
-                  <LinedInput
+                  <FormInput
                     label="Prayer/Technical"
                     value={formState.prayerTechnical}
                     onChange={(e) => updateField("prayerTechnical", e.target.value)}
                   />
-                  <LinedInput
-                    label="Host"
-                    value={formState.host}
-                    onChange={(e) => updateField("host", e.target.value)}
-                  />
-                  <LinedInput
+                  <FormInput label="Host" value={formState.host} onChange={(e) => updateField("host", e.target.value)} />
+                  <FormInput
                     label="Speaker"
                     value={formState.speaker}
                     onChange={(e) => updateField("speaker", e.target.value)}
                   />
-
-                  <div className="erf-field">
-                    <span className="erf-label">Testimony:</span>
-                    <LinedInput
-                      label="1)"
-                      value={formState.testimony1}
-                      onChange={(e) => updateField("testimony1", e.target.value)}
-                    />
-                    <LinedInput
-                      label="2)"
-                      value={formState.testimony2}
-                      onChange={(e) => updateField("testimony2", e.target.value)}
-                    />
-                  </div>
-
+                  <FormInput
+                    label="Testimony 1)"
+                    value={formState.testimony1}
+                    onChange={(e) => updateField("testimony1", e.target.value)}
+                  />
+                  <FormInput
+                    label="Testimony 2)"
+                    value={formState.testimony2}
+                    onChange={(e) => updateField("testimony2", e.target.value)}
+                  />
                   <div className="erf-note-block">
                     <h3>NOTE: For Speakers Attire:</h3>
                     <ol>
@@ -649,11 +602,113 @@ export function EventRequestForm({
                       <li>If T-Shirt w/ round neck, use blazer/coat</li>
                     </ol>
                   </div>
-                  </FormSection>
+                </FormSection>
+              </div>
+            </div>
+          </div>
+
+          <div className="print-only print-root">
+            <div className="print-paper">
+              <header className="print-header">
+                <h1 className="print-title">EVENT REQUEST FORM</h1>
+                <p className="print-note">
+                  IMPORTANT: ALL EVENT REQUEST SHOULD BE DONE 5 DAYS PRIOR AND ARE OPEN TO ALL GRINDERS GUILD
+                  DISTRIBUTORS.
+                </p>
+              </header>
+
+              <div className="print-grid">
+                <div className="print-col">
+                  <section className="print-section form-section">
+                    <h2 className="print-section-title">1. CONTACT INFORMATION</h2>
+                    <PrintField label="Name" value={formState.name} />
+                    <PrintField label="Organization/Department" value={formState.organizationDepartment} />
+                    <PrintField label="Phone No." value={formState.phoneNo} />
+                    <PrintField label="Email Address" value={formState.emailAddress} />
+                  </section>
+
+                  <section className="print-section form-section">
+                    <h2 className="print-section-title">2. EVENT DETAILS</h2>
+                    <PrintField label="Event Title" value={formState.eventTitle} />
+                    <PrintField label="Event Description" value={formState.eventDescription} multiline />
+                    <div className="print-check-group checkbox-group">
+                      <div className="print-check-title">Event Type (check one)</div>
+                      <div>{mark(formState.eventType === "meeting")} Meeting - GBP Product Presentation</div>
+                      <div>{mark(formState.eventType === "workshop")} Workshop - Grinders Distributors Orientation</div>
+                    </div>
+                    <PrintField label="Date(s)" value={formState.eventDates} />
+                    <div className="print-inline-pair">
+                      <PrintField label="Time: From" value={formState.timeFrom} />
+                      <PrintField label="To" value={formState.timeTo} />
+                    </div>
+                    <div className="print-check-group radio-group">
+                      <div className="print-check-title">Is this a recurring event?</div>
+                      <div>{mark(formState.recurringEvent === "yes")} Yes</div>
+                      <div>{mark(formState.recurringEvent === "no")} No</div>
+                    </div>
+                    <PrintField label="If Yes, please specify recurrence" value={formState.recurrenceDetails} />
+                  </section>
+
+                  <section className="print-section form-section">
+                    <h2 className="print-section-title">3. LOCATION & SET-UP NEEDS</h2>
+                    <PrintField label="Preferred Venue/Room" value={formState.preferredVenueRoom} />
+                    <PrintField label="Expected attendance" value={formState.expectedAttendance} />
+                    <div className="print-check-group checkbox-group">
+                      <div className="print-check-title">Room Set-Up Required</div>
+                      <div>{mark(formState.roomSetupClassroomStyle)} Classroom Style</div>
+                    </div>
+                    <div className="print-check-group checkbox-group">
+                      <div className="print-check-title">Audio/Visual Requirements</div>
+                      <div>{mark(formState.avProjector)} Projector</div>
+                      <div>{mark(formState.avMicrophone)} Microphone</div>
+                      <div>{mark(formState.avSpeakers)} Speakers</div>
+                      <div>{mark(formState.avLaptopComputer)} Laptop/Computer</div>
+                      <div>{mark(formState.avZoomStreamingSupport)} Zoom/Streaming Support</div>
+                      <div>{mark(formState.avOthersChecked)} Others</div>
+                    </div>
+                    <PrintField label="Others (specify)" value={formState.avOthersText} multiline />
+                  </section>
+                </div>
+
+                <div className="print-col">
+                  <section className="print-section form-section">
+                    <h2 className="print-section-title">4. ADDITIONAL SERVICES (IF Applicable)</h2>
+                    <div className="print-check-group radio-group">
+                      <div className="print-check-title">Catering Needed?</div>
+                      <div>{mark(formState.cateringNeeded === "yes")} Yes</div>
+                      <div>{mark(formState.cateringNeeded === "no")} No</div>
+                    </div>
+                    <PrintField label="If Yes, specify" value={formState.cateringSpecify} />
+                    <div className="print-check-group radio-group">
+                      <div className="print-check-title">Security</div>
+                      <div>{mark(formState.securityNeeded === "yes")} Yes</div>
+                      <div>{mark(formState.securityNeeded === "no")} No</div>
+                    </div>
+                  </section>
+
+                  <section className="print-section form-section">
+                    <h2 className="print-section-title">5. AUTHORIZATION & SUBMISSION</h2>
+                    <PrintField label="Requested By" value={formState.requestedBy} />
+                    <PrintField label="Date Of Request" value={formState.dateOfRequest} />
+                    <PrintField label="Signature / Full Name" value={formState.signature} />
+                    <PrintField label="Organizer" value={formState.organizer} />
+                    <PrintField label="Prayer/Technical" value={formState.prayerTechnical} />
+                    <PrintField label="Host" value={formState.host} />
+                    <PrintField label="Speaker" value={formState.speaker} />
+                    <PrintField label="Testimony 1)" value={formState.testimony1} />
+                    <PrintField label="Testimony 2)" value={formState.testimony2} />
+                  </section>
+
+                  <section className="print-section note-block">
+                    <h2 className="print-section-title">NOTE: For Speakers Attire:</h2>
+                    <ol className="print-note-list">
+                      <li>At least polo shirt</li>
+                      <li>If T-Shirt w/ round neck, use blazer/coat</li>
+                    </ol>
+                  </section>
                 </div>
               </div>
-
-            </form>
+            </div>
           </div>
         </div>
       </div>
