@@ -23,16 +23,20 @@ export default function HomePage() {
       <PageShell
         title="Dashboard"
         subtitle="Home/Index - Sales performance overview"
-        actions={<Button onClick={() => setIsSyncOpen(true)}>Sync All</Button>}
+        actions={
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <TimeRangeSelector
+              value={range}
+              onChange={setRange}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomStartDateChange={setCustomStartDate}
+              onCustomEndDateChange={setCustomEndDate}
+            />
+            <Button onClick={() => setIsSyncOpen(true)}>Sync All</Button>
+          </div>
+        }
       >
-        <TimeRangeSelector
-          value={range}
-          onChange={setRange}
-          customStartDate={customStartDate}
-          customEndDate={customEndDate}
-          onCustomStartDateChange={setCustomStartDate}
-          onCustomEndDateChange={setCustomEndDate}
-        />
         <SummaryCardGrid stats={dashboardSummary} />
         <AgentCardGrid agents={dashboardAgents} onAgentSelect={setSelectedAgent} />
       </PageShell>

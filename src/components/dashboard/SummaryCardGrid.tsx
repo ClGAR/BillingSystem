@@ -18,10 +18,10 @@ export function SummaryCardGrid({ stats }: SummaryCardGridProps) {
       {stats.map((stat) => (
         <Card key={stat.id}>
           <div className="flex items-start justify-between">
-            <p className="text-sm text-slate-600">{stat.label}</p>
+            <p className="text-sm text-slate-500">{stat.label}</p>
             <Badge variant={trendToVariant[stat.trend]}>{stat.trend}</Badge>
           </div>
-          <p className="mt-3 text-2xl font-semibold text-slate-900">{stat.value}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">{stat.value}</p>
         </Card>
       ))}
     </div>
