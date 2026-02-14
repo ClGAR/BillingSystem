@@ -332,7 +332,11 @@ export function ProspectInvitationForm({
       }
     >
       <div className={embedded ? "form-page-body" : "pt-16 form-page-body"}>
-        <div className={embedded ? "form-shell" : "form-shell max-w-[1440px] mx-auto px-6 py-8"}>
+        <div
+          className={
+            embedded ? "form-shell w-full" : "form-shell w-full max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8"
+          }
+        >
           {showToolbar && (
             <div className="form-toolbar no-print">
               {showBackButton ? (
@@ -354,48 +358,56 @@ export function ProspectInvitationForm({
                 <h1>PROSPECT INVITATION GUIDE</h1>
               </header>
 
-              <div className="prospect-table-wrap">
-                <table className="prospect-screen-table">
+              <div className="prospect-table-wrap w-full overflow-x-auto">
+                <table className="prospect-screen-table min-w-[1100px] w-full border-separate border-spacing-y-2">
                   <thead>
                     <tr>
-                      <th>Leader&apos;s Name</th>
-                      <th>Name of Guest</th>
-                      <th>Call/P2P: Date 1</th>
-                      <th>Call/P2P: Date 2 (Follow-Up)</th>
-                      <th>Remarks</th>
+                      <th className="px-2 align-middle">Leader&apos;s Name</th>
+                      <th className="px-2 align-middle">Name of Guest</th>
+                      <th className="px-2 align-middle">Call/P2P: Date 1</th>
+                      <th className="px-2 align-middle">Call/P2P: Date 2 (Follow-Up)</th>
+                      <th className="px-2 align-middle">Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((row, index) => (
                       <tr key={index}>
-                        <td>
+                        <td className="px-2 align-middle">
                           <input
+                            className="w-full min-w-0"
                             value={row.leaderName}
                             onChange={(e) => updateRow(index, "leaderName", e.target.value)}
                           />
                         </td>
-                        <td>
+                        <td className="px-2 align-middle">
                           <input
+                            className="w-full min-w-0"
                             value={row.guestName}
                             onChange={(e) => updateRow(index, "guestName", e.target.value)}
                           />
                         </td>
-                        <td>
+                        <td className="px-2 align-middle">
                           <input
                             type="date"
+                            className="w-full min-w-0"
                             value={row.date1}
                             onChange={(e) => updateRow(index, "date1", e.target.value)}
                           />
                         </td>
-                        <td>
+                        <td className="px-2 align-middle">
                           <input
                             type="date"
+                            className="w-full min-w-0"
                             value={row.date2}
                             onChange={(e) => updateRow(index, "date2", e.target.value)}
                           />
                         </td>
-                        <td>
-                          <input value={row.remarks} onChange={(e) => updateRow(index, "remarks", e.target.value)} />
+                        <td className="px-2 align-middle">
+                          <input
+                            className="w-full min-w-0"
+                            value={row.remarks}
+                            onChange={(e) => updateRow(index, "remarks", e.target.value)}
+                          />
                         </td>
                       </tr>
                     ))}

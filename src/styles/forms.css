@@ -70,6 +70,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
   padding-bottom: 12px;
 }
 
