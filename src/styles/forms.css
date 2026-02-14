@@ -68,10 +68,18 @@
 .form-screen__body {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-right: 4px;
   padding-bottom: 12px;
+}
+
+.form-page--standalone .form-screen__body {
+  overflow-y: auto;
+}
+
+.form-page--embedded .form-screen__body {
+  overflow-y: visible;
+  padding-right: 0;
 }
 
 .form-actions-bottom {

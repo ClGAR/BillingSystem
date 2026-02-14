@@ -47,13 +47,13 @@ type EventFormsTabsProps = {
 function EventFormsTabs({ activeTab, onChange }: EventFormsTabsProps) {
   return (
     <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex min-w-max items-center gap-1 border-b border-gray-200 mb-6">
+      <div className="flex min-w-max items-center gap-6 border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className={`px-4 py-3 font-medium transition-colors relative whitespace-nowrap ${
-              activeTab === tab.key ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
+            className={`px-0 py-3 font-medium transition-colors relative whitespace-nowrap ${
+              activeTab === tab.key ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             {tab.label}
@@ -106,76 +106,78 @@ export function EventFormsHome() {
   return (
     <div className="event-forms-page min-h-screen bg-gray-50 pt-16">
       <div className="h-[calc(100vh-64px)] min-h-0">
-        <div className="w-full h-full min-h-0 flex flex-col">
-          <div className="shrink-0 w-full max-w-6xl mx-auto px-4">
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
-              <p className="text-gray-600 mt-1">Choose a form to get started with your event requests.</p>
+        <div className="w-full max-w-6xl mx-auto px-4 h-full min-h-0 flex flex-col">
+          <section className="mb-6 shrink-0">
+            <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
+            <p className="text-sm text-gray-500">Choose a form to get started with your event requests.</p>
+
+            <div className="mt-4">
+              <EventFormsTabs activeTab={activeTab} onChange={setTab} />
+            </div>
+          </section>
+
+          <section className="min-h-0 flex-1 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto pb-24">
+              <div className="space-y-5">
+                <div className={activeTab === "special" ? "block" : "hidden"}>
+                  <SpecialCompanyEventsForm
+                    embedded
+                    showBackButton={false}
+                    showToolbar={false}
+                    showPrintRoot={activeTab === "special"}
+                    showActions={false}
+                    onRegisterActions={registerSpecialActions}
+                  />
+                </div>
+                <div className={activeTab === "request" ? "block" : "hidden"}>
+                  <EventRequestForm
+                    embedded
+                    showBackButton={false}
+                    showToolbar={false}
+                    showPrintRoot={activeTab === "request"}
+                    showActions={false}
+                    onRegisterActions={registerRequestActions}
+                  />
+                </div>
+                <div className={activeTab === "prospect" ? "block" : "hidden"}>
+                  <ProspectInvitationForm
+                    embedded
+                    showBackButton={false}
+                    showToolbar={false}
+                    showPrintRoot={activeTab === "prospect"}
+                    showActions={false}
+                    onRegisterActions={registerProspectActions}
+                  />
+                </div>
+              </div>
             </div>
 
-            <EventFormsTabs activeTab={activeTab} onChange={setTab} />
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto pb-24">
-            <div className="w-full max-w-6xl mx-auto px-4 space-y-5">
-              <div className={activeTab === "special" ? "block" : "hidden"}>
-                <SpecialCompanyEventsForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "special"}
-                  showActions={false}
-                  onRegisterActions={registerSpecialActions}
-                />
-              </div>
-              <div className={activeTab === "request" ? "block" : "hidden"}>
-                <EventRequestForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "request"}
-                  showActions={false}
-                  onRegisterActions={registerRequestActions}
-                />
-              </div>
-              <div className={activeTab === "prospect" ? "block" : "hidden"}>
-                <ProspectInvitationForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "prospect"}
-                  showActions={false}
-                  onRegisterActions={registerProspectActions}
-                />
+            <div className="shrink-0 sticky bottom-0 z-20 bg-white border-t no-print">
+              <div className="py-3">
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
+                    <Save className="form-btn__icon" />
+                    Save
+                  </FormActionButton>
+                  <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
+                    <Download className="form-btn__icon" />
+                    Load
+                  </FormActionButton>
+                  <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
+                    <Trash2 className="form-btn__icon" />
+                    Clear
+                  </FormActionButton>
+                  <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
+                    <Printer className="form-btn__icon" />
+                    Print
+                  </FormActionButton>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 text-center">
+                  Disable Headers and Footers in the print dialog for best results.
+                </p>
               </div>
             </div>
-          </div>
-
-          <div className="shrink-0 sticky bottom-0 z-20 bg-white border-t no-print">
-            <div className="w-full max-w-6xl mx-auto px-4 py-3">
-              <div className="flex flex-wrap gap-2 justify-end">
-                <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
-                  <Save className="form-btn__icon" />
-                  Save
-                </FormActionButton>
-                <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
-                  <Download className="form-btn__icon" />
-                  Load
-                </FormActionButton>
-                <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
-                  <Trash2 className="form-btn__icon" />
-                  Clear
-                </FormActionButton>
-                <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
-                  <Printer className="form-btn__icon" />
-                  Print
-                </FormActionButton>
-              </div>
-              <p className="mt-2 text-xs text-gray-500 text-center">
-                Disable Headers and Footers in the print dialog for best results.
-              </p>
-            </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

@@ -522,13 +522,15 @@ export function EventRequestForm({
 
           <div className="screen-form no-print form-screen">
             <div className="form-screen__body">
-              <header className="erf-screen-top">
-              <h1>Event Request Form</h1>
-              <p>
-                Complete the details below. This is the interactive entry form. Print preview will generate the formal
-                filled document.
-              </p>
-              </header>
+              {!embedded ? (
+                <header className="erf-screen-top">
+                  <h1>Event Request Form</h1>
+                  <p>
+                    Complete the details below. This is the interactive entry form. Print preview will generate the formal
+                    filled document.
+                  </p>
+                </header>
+              ) : null}
 
             <div className="erf-columns">
               <div className="erf-column">

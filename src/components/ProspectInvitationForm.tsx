@@ -362,9 +362,11 @@ export function ProspectInvitationForm({
 
           <div className="screen-form no-print prospect-screen-form form-screen">
             <div className="form-screen__body">
-              <header className="prospect-screen-head">
-                <h1>PROSPECT INVITATION GUIDE</h1>
-              </header>
+              {!embedded ? (
+                <header className="prospect-screen-head">
+                  <h1>PROSPECT INVITATION GUIDE</h1>
+                </header>
+              ) : null}
 
               <div className="prospect-table-wrap w-full overflow-x-auto">
                 <table className="prospect-screen-table min-w-[1100px] w-full border-separate border-spacing-y-2">
