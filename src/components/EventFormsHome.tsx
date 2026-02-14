@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Download, Printer, Save, Trash2 } from "lucide-react";
 import { EventRequestForm } from "./EventRequestForm";
 import { ProspectInvitationForm } from "./ProspectInvitationForm";
 import { SpecialCompanyEventsForm } from "./SpecialCompanyEventsForm";
+import { FormActionButton } from "./ui/FormActionButton";
 
 type EventFormTab = "special" | "request" | "prospect";
+
+type FormActions = {
+  save?: () => void;
+  load?: () => void;
+  clear?: () => void;
+  print?: () => void;
+};
 
 type TabItem = {
   key: EventFormTab;
@@ -61,6 +70,11 @@ function EventFormsTabs({ activeTab, onChange }: EventFormsTabsProps) {
 export function EventFormsHome() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<EventFormTab>(() => getInitialTab(searchParams.get("tab")));
+  const actionsRef = useRef<Record<EventFormTab, FormActions>>({
+    special: {},
+    request: {},
+    prospect: {},
+  });
 
   const setTab = (tab: EventFormTab) => {
     setActiveTab(tab);
@@ -72,41 +86,94 @@ export function EventFormsHome() {
     });
   };
 
+  const registerSpecialActions = useCallback((actions: FormActions) => {
+    actionsRef.current.special = actions;
+  }, []);
+
+  const registerRequestActions = useCallback((actions: FormActions) => {
+    actionsRef.current.request = actions;
+  }, []);
+
+  const registerProspectActions = useCallback((actions: FormActions) => {
+    actionsRef.current.prospect = actions;
+  }, []);
+
+  const runAction = (key: keyof FormActions) => {
+    const actions = actionsRef.current[activeTab];
+    actions?.[key]?.();
+  };
+
   return (
-    <div className="event-forms-page min-h-screen bg-gray-50 flex flex-col">
-      <div className="pt-16 flex-1 min-h-0 flex flex-col">
-        <div className="event-forms-shell max-w-[1440px] mx-auto px-6 py-8 flex flex-col min-h-0">
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
-            <p className="text-gray-600 mt-1">Choose a form to get started with your event requests.</p>
+    <div className="event-forms-page min-h-screen bg-gray-50 pt-16">
+      <div className="h-[calc(100vh-64px)] min-h-0">
+        <div className="w-full h-full min-h-0 flex flex-col">
+          <div className="shrink-0 w-full max-w-6xl mx-auto px-4">
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
+              <p className="text-gray-600 mt-1">Choose a form to get started with your event requests.</p>
+            </div>
+
+            <EventFormsTabs activeTab={activeTab} onChange={setTab} />
           </div>
 
-          <EventFormsTabs activeTab={activeTab} onChange={setTab} />
+          <div className="flex-1 min-h-0 overflow-y-auto pb-24">
+            <div className="w-full max-w-6xl mx-auto px-4 space-y-5">
+              <div className={activeTab === "special" ? "block" : "hidden"}>
+                <SpecialCompanyEventsForm
+                  embedded
+                  showBackButton={false}
+                  showToolbar={false}
+                  showPrintRoot={activeTab === "special"}
+                  showActions={false}
+                  onRegisterActions={registerSpecialActions}
+                />
+              </div>
+              <div className={activeTab === "request" ? "block" : "hidden"}>
+                <EventRequestForm
+                  embedded
+                  showBackButton={false}
+                  showToolbar={false}
+                  showPrintRoot={activeTab === "request"}
+                  showActions={false}
+                  onRegisterActions={registerRequestActions}
+                />
+              </div>
+              <div className={activeTab === "prospect" ? "block" : "hidden"}>
+                <ProspectInvitationForm
+                  embedded
+                  showBackButton={false}
+                  showToolbar={false}
+                  showPrintRoot={activeTab === "prospect"}
+                  showActions={false}
+                  onRegisterActions={registerProspectActions}
+                />
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-5 flex-1 min-h-0">
-            <div className={`${activeTab === "special" ? "block" : "hidden"} flex-1 min-h-0`}>
-              <SpecialCompanyEventsForm
-                embedded
-                showBackButton={false}
-                showToolbar={false}
-                showPrintRoot={activeTab === "special"}
-              />
-            </div>
-            <div className={`${activeTab === "request" ? "block" : "hidden"} flex-1 min-h-0`}>
-              <EventRequestForm
-                embedded
-                showBackButton={false}
-                showToolbar={false}
-                showPrintRoot={activeTab === "request"}
-              />
-            </div>
-            <div className={`${activeTab === "prospect" ? "block" : "hidden"} flex-1 min-h-0`}>
-              <ProspectInvitationForm
-                embedded
-                showBackButton={false}
-                showToolbar={false}
-                showPrintRoot={activeTab === "prospect"}
-              />
+          <div className="shrink-0 sticky bottom-0 z-20 bg-white border-t no-print">
+            <div className="w-full max-w-6xl mx-auto px-4 py-3">
+              <div className="flex flex-wrap gap-2 justify-end">
+                <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
+                  <Save className="form-btn__icon" />
+                  Save
+                </FormActionButton>
+                <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
+                  <Download className="form-btn__icon" />
+                  Load
+                </FormActionButton>
+                <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
+                  <Trash2 className="form-btn__icon" />
+                  Clear
+                </FormActionButton>
+                <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
+                  <Printer className="form-btn__icon" />
+                  Print
+                </FormActionButton>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 text-center">
+                Disable Headers and Footers in the print dialog for best results.
+              </p>
             </div>
           </div>
         </div>

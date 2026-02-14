@@ -193,6 +193,10 @@ type SpecialCompanyEventsFormProps = {
     getState: () => unknown;
     setState: (state: unknown) => void;
     resetState: () => void;
+    save?: () => void;
+    load?: () => void;
+    clear?: () => void;
+    print?: () => void;
   }) => void;
 };
 
@@ -294,6 +298,10 @@ export function SpecialCompanyEventsForm({
       getState: () => formState,
       setState: (nextState) => setFormState(normalizeSpecialCompanyEventsState(nextState)),
       resetState: () => setFormState(initialState),
+      save: handleSave,
+      load: handleLoad,
+      clear: handleClear,
+      print: handlePrint,
     });
   }, [onRegisterActions, formState]);
 

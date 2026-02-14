@@ -96,6 +96,10 @@ type ProspectInvitationFormProps = {
     getState: () => unknown;
     setState: (state: unknown) => void;
     resetState: () => void;
+    save?: () => void;
+    load?: () => void;
+    clear?: () => void;
+    print?: () => void;
   }) => void;
 };
 
@@ -244,6 +248,10 @@ export function ProspectInvitationForm({
         setCheckedBy("");
         setApprovedBy([...DEFAULT_APPROVED_BY]);
       },
+      save: handleSave,
+      load: handleLoad,
+      clear: handleClear,
+      print: handlePrint,
     });
   }, [onRegisterActions, rows, checkedBy, approvedBy]);
 

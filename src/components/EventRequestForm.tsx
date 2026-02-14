@@ -155,6 +155,10 @@ type EventRequestFormProps = {
     setState: (state: unknown) => void;
     resetState: () => void;
     validateBeforeSave?: () => boolean;
+    save?: () => void;
+    load?: () => void;
+    clear?: () => void;
+    print?: () => void;
   }) => void;
 };
 
@@ -344,6 +348,10 @@ export function EventRequestForm({
       },
       resetState: handleReset,
       validateBeforeSave,
+      save: handleSave,
+      load: handleLoad,
+      clear: handleClear,
+      print: handlePrint,
     });
   }, [onRegisterActions, formState]);
 
