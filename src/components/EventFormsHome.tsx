@@ -76,35 +76,33 @@ export function EventFormsHome() {
   };
 
   return (
-    <div className="event-forms-page h-screen min-h-0 bg-gray-50 pt-16">
-      <div className="w-full max-w-6xl mx-auto px-6 py-8 h-full min-h-0 flex flex-col">
-        <div className="shrink-0">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900">Event Forms</h1>
-            <p className="mt-2 text-gray-500">Choose a form to get started with your event requests.</p>
-          </div>
+    <div className="event-forms-page bg-gray-50 pt-16">
+      <div className="w-full max-w-6xl mx-auto px-6 py-8">
+        <header>
+          <h1 className="text-3xl font-semibold text-gray-900">Event Forms</h1>
+          <p className="mt-2 text-gray-500">Choose a form to get started with your event requests.</p>
+        </header>
 
-          <div className="mt-8 border-b border-gray-200">
-            <div className="flex flex-wrap gap-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setTab(tab.key)}
-                  className={`relative pb-3 text-sm font-medium transition-colors ${
-                    activeTab === tab.key ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {tab.label}
-                  {activeTab === tab.key ? (
-                    <span className="absolute left-0 right-0 -bottom-[1px] h-0.5 bg-blue-600" />
-                  ) : null}
-                </button>
-              ))}
-            </div>
+        <div className="mt-6 border-b">
+          <div className="flex flex-wrap gap-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setTab(tab.key)}
+                className={`relative pb-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.key ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.key ? (
+                  <span className="absolute left-0 right-0 -bottom-[1px] h-0.5 bg-blue-600" />
+                ) : null}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mt-8 flex-1 min-h-0 overflow-y-auto pb-28">
+        <main className="mt-8">
           {activeTab === "special" ? (
             <SpecialCompanyEventsForm
               embedded
@@ -135,33 +133,31 @@ export function EventFormsHome() {
               onRegisterActions={registerProspectActions}
             />
           ) : null}
-        </div>
+        </main>
 
-        <div className="shrink-0 border-t bg-white no-print">
-          <div className="py-3">
-            <div className="flex flex-wrap gap-2 justify-end">
-              <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
-                <Save className="form-btn__icon" />
-                Save
-              </FormActionButton>
-              <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
-                <Download className="form-btn__icon" />
-                Load
-              </FormActionButton>
-              <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
-                <Trash2 className="form-btn__icon" />
-                Clear
-              </FormActionButton>
-              <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
-                <Printer className="form-btn__icon" />
-                Print
-              </FormActionButton>
-            </div>
-            <p className="mt-2 text-xs text-gray-500 text-center">
-              Disable Headers and Footers in the print dialog for best results.
-            </p>
+        <footer className="mt-8 border-t pt-4">
+          <div className="flex flex-wrap gap-2 justify-end">
+            <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
+              <Save className="form-btn__icon" />
+              Save
+            </FormActionButton>
+            <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
+              <Download className="form-btn__icon" />
+              Load
+            </FormActionButton>
+            <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
+              <Trash2 className="form-btn__icon" />
+              Clear
+            </FormActionButton>
+            <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
+              <Printer className="form-btn__icon" />
+              Print
+            </FormActionButton>
           </div>
-        </div>
+          <p className="mt-2 text-xs text-gray-500 text-center">
+            Disable Headers and Footers in the print dialog for best results.
+          </p>
+        </footer>
       </div>
     </div>
   );
