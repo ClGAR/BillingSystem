@@ -4,7 +4,6 @@ import { Download, Printer, Save, Trash2 } from "lucide-react";
 import { EventRequestForm } from "./EventRequestForm";
 import { ProspectInvitationForm } from "./ProspectInvitationForm";
 import { SpecialCompanyEventsForm } from "./SpecialCompanyEventsForm";
-import { FormActionButton } from "./ui/FormActionButton";
 
 type EventFormTab = "special" | "request" | "prospect";
 
@@ -47,8 +46,6 @@ export function EventFormsHome() {
     request: {},
     prospect: {},
   });
-  const actionButtonClass =
-    "!bg-black !text-white border !border-black hover:!bg-gray-900 active:!bg-black";
 
   const setTab = (tab: EventFormTab) => {
     setActiveTab(tab);
@@ -137,40 +134,44 @@ export function EventFormsHome() {
           ) : null}
         </div>
 
-        <div className="mt-8 border-t pt-4 no-print">
+        <div className="mt-8 border-t bg-white pt-4 no-print">
           <div className="flex flex-wrap gap-2 justify-end">
-            <FormActionButton
+            <button
+              type="button"
               onClick={() => runAction("save")}
-              ariaLabel="Save active form"
-              className={actionButtonClass}
+              aria-label="Save active form"
+              className="bg-black text-white border border-black hover:bg-gray-900 active:bg-black px-4 py-2 rounded-md inline-flex items-center gap-2"
             >
-              <Save className="form-btn__icon" />
+              <Save className="h-4 w-4 text-white" />
               Save
-            </FormActionButton>
-            <FormActionButton
+            </button>
+            <button
+              type="button"
               onClick={() => runAction("load")}
-              ariaLabel="Load active form"
-              className={actionButtonClass}
+              aria-label="Load active form"
+              className="bg-black text-white border border-black hover:bg-gray-900 active:bg-black px-4 py-2 rounded-md inline-flex items-center gap-2"
             >
-              <Download className="form-btn__icon" />
+              <Download className="h-4 w-4 text-white" />
               Load
-            </FormActionButton>
-            <FormActionButton
+            </button>
+            <button
+              type="button"
               onClick={() => runAction("clear")}
-              ariaLabel="Clear active form"
-              className={actionButtonClass}
+              aria-label="Clear active form"
+              className="bg-black text-white border border-black hover:bg-gray-900 active:bg-black px-4 py-2 rounded-md inline-flex items-center gap-2"
             >
-              <Trash2 className="form-btn__icon" />
+              <Trash2 className="h-4 w-4 text-white" />
               Clear
-            </FormActionButton>
-            <FormActionButton
+            </button>
+            <button
+              type="button"
               onClick={() => runAction("print")}
-              ariaLabel="Print active form"
-              className={actionButtonClass}
+              aria-label="Print active form"
+              className="bg-black text-white border border-black hover:bg-gray-900 active:bg-black px-4 py-2 rounded-md inline-flex items-center gap-2"
             >
-              <Printer className="form-btn__icon" />
+              <Printer className="h-4 w-4 text-white" />
               Print
-            </FormActionButton>
+            </button>
           </div>
           <p className="mt-2 text-xs text-gray-500 text-center">
             Disable Headers and Footers in the print dialog for best results.
