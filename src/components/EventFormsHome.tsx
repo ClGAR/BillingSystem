@@ -47,6 +47,8 @@ export function EventFormsHome() {
     request: {},
     prospect: {},
   });
+  const actionButtonClass =
+    "!bg-black !text-white border !border-black hover:!bg-gray-900 active:!bg-black";
 
   const setTab = (tab: EventFormTab) => {
     setActiveTab(tab);
@@ -137,19 +139,35 @@ export function EventFormsHome() {
 
         <div className="mt-8 border-t pt-4 no-print">
           <div className="flex flex-wrap gap-2 justify-end">
-            <FormActionButton onClick={() => runAction("save")} ariaLabel="Save active form">
+            <FormActionButton
+              onClick={() => runAction("save")}
+              ariaLabel="Save active form"
+              className={actionButtonClass}
+            >
               <Save className="form-btn__icon" />
               Save
             </FormActionButton>
-            <FormActionButton onClick={() => runAction("load")} ariaLabel="Load active form">
+            <FormActionButton
+              onClick={() => runAction("load")}
+              ariaLabel="Load active form"
+              className={actionButtonClass}
+            >
               <Download className="form-btn__icon" />
               Load
             </FormActionButton>
-            <FormActionButton onClick={() => runAction("clear")} ariaLabel="Clear active form">
+            <FormActionButton
+              onClick={() => runAction("clear")}
+              ariaLabel="Clear active form"
+              className={actionButtonClass}
+            >
               <Trash2 className="form-btn__icon" />
               Clear
             </FormActionButton>
-            <FormActionButton onClick={() => runAction("print")} ariaLabel="Print active form">
+            <FormActionButton
+              onClick={() => runAction("print")}
+              ariaLabel="Print active form"
+              className={actionButtonClass}
+            >
               <Printer className="form-btn__icon" />
               Print
             </FormActionButton>
