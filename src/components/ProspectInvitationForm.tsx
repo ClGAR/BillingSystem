@@ -424,10 +424,14 @@ export function ProspectInvitationForm({
               </div>
 
               <div className="prospect-row-actions">
-                <FormActionButton onClick={handleAddRow}>
-                  <Plus className="form-btn__icon" />
+                <button
+                  type="button"
+                  onClick={handleAddRow}
+                  className="no-print bg-black text-white border border-black hover:bg-gray-900 active:bg-black px-4 py-2 rounded-md inline-flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4 text-white" />
                   Add Row
-                </FormActionButton>
+                </button>
               </div>
 
               <div className="prospect-approval-block">
