@@ -39,34 +39,6 @@ const getInitialTab = (queryTab: string | null): EventFormTab => {
   return "request";
 };
 
-type EventFormsTabsProps = {
-  activeTab: EventFormTab;
-  onChange: (tab: EventFormTab) => void;
-};
-
-function EventFormsTabs({ activeTab, onChange }: EventFormsTabsProps) {
-  return (
-    <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex min-w-max items-center gap-6 border-b border-gray-200">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => onChange(tab.key)}
-            className={`px-0 py-3 font-medium transition-colors relative whitespace-nowrap ${
-              activeTab === tab.key ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            {tab.label}
-            {activeTab === tab.key && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function EventFormsHome() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<EventFormTab>(() => getInitialTab(searchParams.get("tab")));
@@ -107,17 +79,30 @@ export function EventFormsHome() {
     <div className="event-forms-page min-h-screen bg-gray-50 pt-16">
       <div className="h-[calc(100vh-64px)] min-h-0">
         <div className="w-full max-w-6xl mx-auto px-4 h-full min-h-0 flex flex-col">
-          <section className="mb-6 shrink-0">
+          <section className="py-4 shrink-0">
             <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
             <p className="text-sm text-gray-500">Choose a form to get started with your event requests.</p>
 
-            <div className="mt-4">
-              <EventFormsTabs activeTab={activeTab} onChange={setTab} />
+            <div className="mt-4 flex flex-wrap gap-6 border-b border-gray-200">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setTab(tab.key)}
+                  className={`relative pb-3 text-sm font-medium transition-colors ${
+                    activeTab === tab.key ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  {tab.label}
+                  {activeTab === tab.key ? (
+                    <span className="absolute left-0 right-0 -bottom-[1px] h-0.5 bg-blue-600" />
+                  ) : null}
+                </button>
+              ))}
             </div>
           </section>
 
           <section className="min-h-0 flex-1 flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto pb-24">
+            <div className="pt-6 flex-1 min-h-0 overflow-y-auto pb-24">
               <div className="space-y-5">
                 <div className={activeTab === "special" ? "block" : "hidden"}>
                   <SpecialCompanyEventsForm
