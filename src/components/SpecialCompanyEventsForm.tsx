@@ -426,13 +426,11 @@ export function SpecialCompanyEventsForm({
 
           <div className="screen-form no-print form-screen">
             <div className="form-screen__body">
-              {!embedded ? (
-                <header className="sce-screen-head">
-                  <div className="sce-title">SPECIAL COMPANY EVENTS</div>
-                  <div className="sce-title-sub">(with speaker)</div>
-                  <div className="sce-title-sub">FLOW CHECKLIST:</div>
-                </header>
-              ) : null}
+              <header className="sce-screen-head">
+                <div className="sce-title">SPECIAL COMPANY EVENTS</div>
+                <div className="sce-title-sub">(with speaker)</div>
+                <div className="sce-title-sub">FLOW CHECKLIST:</div>
+              </header>
 
             <div className="sce-top-fields">
               <label className="sce-field">

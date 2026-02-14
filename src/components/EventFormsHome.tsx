@@ -76,15 +76,17 @@ export function EventFormsHome() {
   };
 
   return (
-    <div className="event-forms-page min-h-screen bg-gray-50 pt-16">
+    <div className="event-forms-page w-full min-h-screen bg-gray-50 pt-16">
       <div className="h-[calc(100vh-64px)] min-h-0">
-        <div className="w-full max-w-6xl mx-auto px-4 h-full min-h-0 flex flex-col">
-          <div className="shrink-0 sticky top-0 z-20 bg-white">
-            <div className="py-4">
-              <h1 className="text-2xl font-semibold text-gray-900">Event Forms</h1>
-              <p className="text-sm text-gray-500">Choose a form to get started with your event requests.</p>
+        <div className="w-full max-w-6xl mx-auto px-6 py-8 h-full min-h-0 flex flex-col">
+          <div className="shrink-0">
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">Event Forms</h1>
+              <p className="mt-2 text-gray-500">Choose a form to get started with your event requests.</p>
+            </div>
 
-              <div className="mt-4 flex flex-wrap gap-6 border-b border-gray-200">
+            <div className="mt-8 border-b border-gray-200">
+              <div className="flex flex-wrap gap-6">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
@@ -103,39 +105,37 @@ export function EventFormsHome() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto pt-6 pb-24">
-            <div className="space-y-5">
-              <div className={activeTab === "special" ? "block" : "hidden"}>
-                <SpecialCompanyEventsForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "special"}
-                  showActions={false}
-                  onRegisterActions={registerSpecialActions}
-                />
-              </div>
-              <div className={activeTab === "request" ? "block" : "hidden"}>
-                <EventRequestForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "request"}
-                  showActions={false}
-                  onRegisterActions={registerRequestActions}
-                />
-              </div>
-              <div className={activeTab === "prospect" ? "block" : "hidden"}>
-                <ProspectInvitationForm
-                  embedded
-                  showBackButton={false}
-                  showToolbar={false}
-                  showPrintRoot={activeTab === "prospect"}
-                  showActions={false}
-                  onRegisterActions={registerProspectActions}
-                />
-              </div>
-            </div>
+          <div className="mt-8 flex-1 min-h-0 overflow-y-auto pb-24">
+            {activeTab === "special" ? (
+              <SpecialCompanyEventsForm
+                embedded
+                showBackButton={false}
+                showToolbar={false}
+                showPrintRoot={activeTab === "special"}
+                showActions={false}
+                onRegisterActions={registerSpecialActions}
+              />
+            ) : null}
+            {activeTab === "request" ? (
+              <EventRequestForm
+                embedded
+                showBackButton={false}
+                showToolbar={false}
+                showPrintRoot={activeTab === "request"}
+                showActions={false}
+                onRegisterActions={registerRequestActions}
+              />
+            ) : null}
+            {activeTab === "prospect" ? (
+              <ProspectInvitationForm
+                embedded
+                showBackButton={false}
+                showToolbar={false}
+                showPrintRoot={activeTab === "prospect"}
+                showActions={false}
+                onRegisterActions={registerProspectActions}
+              />
+            ) : null}
           </div>
 
           <div className="shrink-0 sticky bottom-0 z-20 bg-white border-t no-print">
