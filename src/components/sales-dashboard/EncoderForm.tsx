@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 
 type FormState = {
   event: string;
@@ -58,7 +58,7 @@ const initialFormState: FormState = {
   remarks: ""
 };
 
-const formatCurrency = (value: number) => `₱ ${value.toFixed(2)}`;
+const formatCurrency = (value: number) => `â‚± ${value.toFixed(2)}`;
 
 const inputClass =
   "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm";
@@ -118,8 +118,8 @@ export function EncoderForm() {
     <div className="w-full">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="flex flex-col gap-8 h-full">
-            <section>
+          <div className="flex flex-col gap-6 h-full">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
                   Transaction Details
@@ -278,9 +278,9 @@ export function EncoderForm() {
                   </select>
                 </div>
               </div>
-            </section>
+            </div>
 
-            <section>
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
                   Pricing &amp; Quantity
@@ -367,34 +367,36 @@ export function EncoderForm() {
                   />
                 </div>
               </div>
-            </section>
+            </div>
 
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-5">
               <div className="text-sm font-medium text-blue-700">Total Sales</div>
               <div className="mt-2 text-3xl font-semibold text-blue-900">
                 {formatCurrency(totals.totalSales)}
               </div>
             </div>
 
-            <div className="mt-auto hidden md:flex items-center gap-3">
-              <button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
-              >
-                Save Entry
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
-              >
-                Clear Form
-              </button>
+            <div className="mt-auto hidden md:block bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
+                >
+                  Save Entry
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
+                >
+                  Clear Form
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-8">
-            <section>
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
                   Payment &amp; Inventory
@@ -453,78 +455,80 @@ export function EncoderForm() {
                 </div>
               </div>
 
-              <div className="mt-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Additional Payment
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Additional Payment
+                </div>
+                <div className="mt-3 grid grid-cols-12 gap-x-6 gap-y-4">
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Mode of Payment
+                    </label>
+                    <select
+                      name="paymentMode2"
+                      value={form.paymentMode2}
+                      onChange={updateField}
+                      className={selectClass}
+                    >
+                      <option value="" disabled>
+                        Select mode
+                      </option>
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank Transfer</option>
+                      <option value="card">Card</option>
+                      <option value="gcash">GCash</option>
+                    </select>
+                  </div>
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Payment Mode Type
+                    </label>
+                    <select
+                      name="paymentModeType2"
+                      value={form.paymentModeType2}
+                      onChange={updateField}
+                      className={selectClass}
+                    >
+                      <option value="" disabled>
+                        Select type
+                      </option>
+                      <option value="full">Full Payment</option>
+                      <option value="partial">Partial</option>
+                      <option value="installment">Installment</option>
+                    </select>
+                  </div>
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Reference Number
+                    </label>
+                    <input
+                      type="text"
+                      name="referenceNumber2"
+                      placeholder="Enter reference number"
+                      value={form.referenceNumber2}
+                      onChange={updateField}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="paymentAmount2"
+                      value={form.paymentAmount2}
+                      onChange={updateField}
+                      className={inputClass}
+                      min={0}
+                      step="0.01"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="mt-3 grid grid-cols-12 gap-x-6 gap-y-4">
-                <div className="col-span-12 md:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Mode of Payment
-                  </label>
-                  <select
-                    name="paymentMode2"
-                    value={form.paymentMode2}
-                    onChange={updateField}
-                    className={selectClass}
-                  >
-                    <option value="" disabled>
-                      Select mode
-                    </option>
-                    <option value="cash">Cash</option>
-                    <option value="bank">Bank Transfer</option>
-                    <option value="card">Card</option>
-                    <option value="gcash">GCash</option>
-                  </select>
-                </div>
-                <div className="col-span-12 md:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Payment Mode Type
-                  </label>
-                  <select
-                    name="paymentModeType2"
-                    value={form.paymentModeType2}
-                    onChange={updateField}
-                    className={selectClass}
-                  >
-                    <option value="" disabled>
-                      Select type
-                    </option>
-                    <option value="full">Full Payment</option>
-                    <option value="partial">Partial</option>
-                    <option value="installment">Installment</option>
-                  </select>
-                </div>
-                <div className="col-span-12 md:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Reference Number
-                  </label>
-                  <input
-                    type="text"
-                    name="referenceNumber2"
-                    placeholder="Enter reference number"
-                    value={form.referenceNumber2}
-                    onChange={updateField}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="col-span-12 md:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Amount
-                  </label>
-                  <input
-                    type="number"
-                    name="paymentAmount2"
-                    value={form.paymentAmount2}
-                    onChange={updateField}
-                    className={inputClass}
-                    min={0}
-                    step="0.01"
-                  />
-                </div>
-              </div>
-            </section>
+            </div>
 
-            <section>
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
                   Inventory Movement
@@ -584,9 +588,9 @@ export function EncoderForm() {
                   />
                 </div>
               </div>
-            </section>
+            </div>
 
-            <section>
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">Remarks</h2>
               </div>
@@ -600,24 +604,26 @@ export function EncoderForm() {
                   className={`${inputClass} resize-none`}
                 />
               </div>
-            </section>
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 flex md:hidden items-center gap-3">
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
-          >
-            Save Entry
-          </button>
-          <button
-            type="button"
-            onClick={resetForm}
-            className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
-          >
-            Clear Form
-          </button>
+        <div className="mt-8 md:hidden bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
+            >
+              Save Entry
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
+            >
+              Clear Form
+            </button>
+          </div>
         </div>
       </div>
     </div>
