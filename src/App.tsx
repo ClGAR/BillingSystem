@@ -12,6 +12,14 @@ import { EventFormsHome } from './components/EventFormsHome';
 import { EventRequestForm } from './components/EventRequestForm';
 import { ProspectInvitationForm } from './components/ProspectInvitationForm';
 import { SpecialCompanyEventsForm } from './components/SpecialCompanyEventsForm';
+import { SalesDashboardLayout } from './components/SalesDashboardLayout';
+import { SalesDashboardHome } from './components/SalesDashboardHome';
+import { SalesDashboardEncoderPage } from './components/SalesDashboardEncoderPage';
+import { SalesDashboardSalesReportPage } from './components/SalesDashboardSalesReportPage';
+import { SalesDashboardInventoryReportPage } from './components/SalesDashboardInventoryReportPage';
+import { SalesDashboardReportsPage } from './components/SalesDashboardReportsPage';
+import { SalesDashboardUsersPage } from './components/SalesDashboardUsersPage';
+import { SalesDashboardSalesMetricsPage } from './components/SalesDashboardSalesMetricsPage';
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -47,14 +55,23 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-        <Route path="/bills" element={<BillsPage />} />
-        <Route path="/bills/new" element={<CreateBillPage />} />
-        <Route path="/bills/:id" element={<ViewBillPage />} />
-        <Route path="/bills/:id/edit" element={<EditBillPage />} />
-        <Route path="/event-forms" element={<EventFormsHome />} />
-        <Route path="/forms/event-request" element={<EventRequestForm />} />
-        <Route path="/forms/prospect-invitation" element={<ProspectInvitationForm />} />
-        <Route path="/forms/special-company-events" element={<SpecialCompanyEventsForm />} />
+          <Route path="/bills" element={<BillsPage />} />
+          <Route path="/bills/new" element={<CreateBillPage />} />
+          <Route path="/bills/:id" element={<ViewBillPage />} />
+          <Route path="/bills/:id/edit" element={<EditBillPage />} />
+          <Route path="/event-forms" element={<EventFormsHome />} />
+          <Route path="/forms/event-request" element={<EventRequestForm />} />
+          <Route path="/forms/prospect-invitation" element={<ProspectInvitationForm />} />
+          <Route path="/forms/special-company-events" element={<SpecialCompanyEventsForm />} />
+          <Route path="/sales-dashboard" element={<SalesDashboardLayout />}>
+            <Route index element={<SalesDashboardHome />} />
+            <Route path="encoder" element={<SalesDashboardEncoderPage />} />
+            <Route path="sales-report" element={<SalesDashboardSalesReportPage />} />
+            <Route path="inventory-report" element={<SalesDashboardInventoryReportPage />} />
+            <Route path="reports" element={<SalesDashboardReportsPage />} />
+            <Route path="users" element={<SalesDashboardUsersPage />} />
+            <Route path="sales-metrics" element={<SalesDashboardSalesMetricsPage />} />
+          </Route>
         </Route>
       </Route>
 
