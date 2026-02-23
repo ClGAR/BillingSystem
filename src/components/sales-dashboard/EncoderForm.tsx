@@ -125,8 +125,8 @@ export function EncoderForm() {
                   Transaction Details
                 </h2>
               </div>
-              <div className="mt-4 space-y-4">
-                <div>
+              <div className="mt-4 grid grid-cols-12 gap-4">
+                <div className="col-span-12">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Event
                   </label>
@@ -144,7 +144,7 @@ export function EncoderForm() {
                     <option value="online">Online</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Date
                   </label>
@@ -156,7 +156,7 @@ export function EncoderForm() {
                     className={inputClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     PO Number
                   </label>
@@ -169,7 +169,7 @@ export function EncoderForm() {
                     className={inputClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Member Name
                   </label>
@@ -182,7 +182,7 @@ export function EncoderForm() {
                     className={inputClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Username
                   </label>
@@ -195,7 +195,7 @@ export function EncoderForm() {
                     className={inputClass}
                   />
                 </div>
-                <div className="flex items-center justify-between gap-4">
+                <div className="col-span-12 flex items-center justify-between gap-4">
                   <span className="text-sm font-medium text-gray-700">
                     New Member?
                   </span>
@@ -224,7 +224,7 @@ export function EncoderForm() {
                     </button>
                   </div>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Member Type
                   </label>
@@ -242,7 +242,7 @@ export function EncoderForm() {
                     <option value="guest">Guest</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Package Type
                   </label>
@@ -260,7 +260,7 @@ export function EncoderForm() {
                     <option value="premium">Premium</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     To Blister?
                   </label>
@@ -286,8 +286,8 @@ export function EncoderForm() {
                   Pricing &amp; Quantity
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="mt-4 grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Quantity
                   </label>
@@ -300,7 +300,7 @@ export function EncoderForm() {
                     min={0}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Blister Count
                   </label>
@@ -313,7 +313,7 @@ export function EncoderForm() {
                     min={0}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Original Price
                   </label>
@@ -325,7 +325,7 @@ export function EncoderForm() {
                     className={readOnlyClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Discount
                   </label>
@@ -340,7 +340,7 @@ export function EncoderForm() {
                     <option value="0.2">20% discount</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Price After Discount
                   </label>
@@ -352,7 +352,7 @@ export function EncoderForm() {
                     className={readOnlyClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     One-Time Discount
                   </label>
@@ -384,8 +384,8 @@ export function EncoderForm() {
                   Payment &amp; Inventory
                 </h2>
               </div>
-              <div className="mt-4 space-y-4">
-                <div>
+              <div className="mt-4 grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Mode of Payment
                   </label>
@@ -404,7 +404,7 @@ export function EncoderForm() {
                     <option value="gcash">GCash</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Payment Mode Type
                   </label>
@@ -422,7 +422,7 @@ export function EncoderForm() {
                     <option value="installment">Installment</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Reference Number
                   </label>
@@ -440,8 +440,8 @@ export function EncoderForm() {
               <div className="mt-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Additional Payment
               </div>
-              <div className="mt-3 space-y-4">
-                <div>
+              <div className="mt-3 grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Mode of Payment
                   </label>
@@ -460,7 +460,7 @@ export function EncoderForm() {
                     <option value="gcash">GCash</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Payment Mode Type
                   </label>
@@ -478,7 +478,7 @@ export function EncoderForm() {
                     <option value="installment">Installment</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Reference Number
                   </label>
@@ -491,7 +491,7 @@ export function EncoderForm() {
                     className={inputClass}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Amount
                   </label>
@@ -514,8 +514,8 @@ export function EncoderForm() {
                   Inventory Movement
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="mt-4 grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Released (Bottle)
                   </label>
@@ -528,7 +528,7 @@ export function EncoderForm() {
                     min={0}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Released (Blister)
                   </label>
@@ -541,7 +541,7 @@ export function EncoderForm() {
                     min={0}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     To Follow (Bottle)
                   </label>
@@ -554,7 +554,7 @@ export function EncoderForm() {
                     min={0}
                   />
                 </div>
-                <div>
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     To Follow (Blister)
                   </label>
