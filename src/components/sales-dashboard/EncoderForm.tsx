@@ -117,8 +117,8 @@ export function EncoderForm() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="flex flex-col gap-6 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 grid-flow-row auto-rows-min">
+          <div className="flex flex-col gap-6 h-full col-span-1 min-w-0">
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
@@ -395,7 +395,7 @@ export function EncoderForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 col-span-1 min-w-0">
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
