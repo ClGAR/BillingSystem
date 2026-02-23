@@ -117,8 +117,8 @@ export function EncoderForm() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-8 h-full">
             <section>
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
@@ -375,9 +375,25 @@ export function EncoderForm() {
                 {formatCurrency(totals.totalSales)}
               </div>
             </div>
+
+            <div className="mt-auto hidden md:flex items-center gap-3">
+              <button
+                type="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
+              >
+                Save Entry
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
+              >
+                Clear Form
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-8">
             <section>
               <div className="pb-2 border-b border-gray-200">
                 <h2 className="text-base font-semibold text-blue-600">
@@ -586,23 +602,23 @@ export function EncoderForm() {
               </div>
             </section>
           </div>
-        </div>
-      </div>
 
-      <div className="mt-6 flex items-center gap-3">
-        <button
-          type="button"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
-        >
-          Save Entry
-        </button>
-        <button
-          type="button"
-          onClick={resetForm}
-          className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
-        >
-          Clear Form
-        </button>
+          <div className="flex md:hidden items-center gap-3">
+            <button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
+            >
+              Save Entry
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-5 py-2.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 text-sm font-medium transition-colors"
+            >
+              Clear Form
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
