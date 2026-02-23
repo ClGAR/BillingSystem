@@ -125,7 +125,7 @@ export function EncoderForm() {
                   Transaction Details
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-12 gap-4">
+              <div className="mt-4 grid grid-cols-12 gap-x-6 gap-y-4">
                 <div className="col-span-12">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Event
@@ -286,7 +286,7 @@ export function EncoderForm() {
                   Pricing &amp; Quantity
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-12 gap-4">
+              <div className="mt-4 grid grid-cols-12 gap-x-6 gap-y-4">
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Quantity
@@ -384,7 +384,7 @@ export function EncoderForm() {
                   Payment &amp; Inventory
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-12 gap-4">
+              <div className="mt-4 grid grid-cols-12 gap-x-6 gap-y-4">
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Mode of Payment
@@ -440,7 +440,7 @@ export function EncoderForm() {
               <div className="mt-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Additional Payment
               </div>
-              <div className="mt-3 grid grid-cols-12 gap-4">
+              <div className="mt-3 grid grid-cols-12 gap-x-6 gap-y-4">
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Mode of Payment
@@ -514,7 +514,7 @@ export function EncoderForm() {
                   Inventory Movement
                 </h2>
               </div>
-              <div className="mt-4 grid grid-cols-12 gap-4">
+              <div className="mt-4 grid grid-cols-12 gap-x-6 gap-y-4">
                 <div className="col-span-12 md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Released (Bottle)
