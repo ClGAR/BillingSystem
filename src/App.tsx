@@ -20,6 +20,7 @@ import { SalesDashboardInventoryReportPage } from './components/SalesDashboardIn
 import { SalesDashboardReportsPage } from './components/SalesDashboardReportsPage';
 import { SalesDashboardUsersPage } from './components/SalesDashboardUsersPage';
 import { SalesDashboardSalesMetricsPage } from './components/SalesDashboardSalesMetricsPage';
+import { SalesDashboardEncoderApp } from './app/App';
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -63,7 +64,12 @@ export default function App() {
           <Route path="/forms/event-request" element={<EventRequestForm />} />
           <Route path="/forms/prospect-invitation" element={<ProspectInvitationForm />} />
           <Route path="/forms/special-company-events" element={<SpecialCompanyEventsForm />} />
-          <Route path="/sales-dashboard" element={<SalesDashboardLayout />}>
+          <Route
+            path="/sales-dashboard"
+            element={<SalesDashboardEncoderApp initialPage="dashboard" />}
+          />
+          <Route path="/encoder" element={<SalesDashboardEncoderApp initialPage="encoder" />} />
+          <Route path="/sales-dashboard-legacy" element={<SalesDashboardLayout />}>
             <Route index element={<SalesDashboardHome />} />
             <Route path="encoder" element={<SalesDashboardEncoderPage />} />
             <Route path="sales-report" element={<SalesDashboardSalesReportPage />} />

@@ -1,0 +1,402 @@
+import React, { useMemo, useState } from 'react';
+import { FormField } from './form-field';
+import { FormSelect } from './form-select';
+import { FormToggle } from './form-toggle';
+
+type EncoderFormState = {
+  event: string;
+  date: string;
+  poNumber: string;
+  memberName: string;
+  username: string;
+  newMember: boolean;
+  memberType: string;
+  packageType: string;
+  toBlister: string;
+  quantity: string;
+  blisterCount: string;
+  originalPrice: string;
+  discount: string;
+  oneTimeDiscount: string;
+  modeOfPayment: string;
+  paymentModeType: string;
+  referenceNumber: string;
+  modeOfPayment2: string;
+  paymentModeType2: string;
+  referenceNumber2: string;
+  amount2: string;
+  releasedBottle: string;
+  releasedBlister: string;
+  toFollowBottle: string;
+  toFollowBlister: string;
+  remarks: string;
+};
+
+const initialState: EncoderFormState = {
+  event: '',
+  date: '',
+  poNumber: '',
+  memberName: '',
+  username: '',
+  newMember: false,
+  memberType: '',
+  packageType: '',
+  toBlister: '',
+  quantity: '',
+  blisterCount: '',
+  originalPrice: '0.00',
+  discount: '0',
+  oneTimeDiscount: '',
+  modeOfPayment: '',
+  paymentModeType: '',
+  referenceNumber: '',
+  modeOfPayment2: '',
+  paymentModeType2: '',
+  referenceNumber2: '',
+  amount2: '',
+  releasedBottle: '',
+  releasedBlister: '',
+  toFollowBottle: '',
+  toFollowBlister: '',
+  remarks: ''
+};
+
+const eventOptions = [
+  { label: 'Select event', value: '' },
+  { label: 'Promo Event 1', value: 'promo-event-1' },
+  { label: 'Promo Event 2', value: 'promo-event-2' },
+  { label: 'Regular Sale', value: 'regular-sale' }
+];
+
+const memberTypeOptions = [
+  { label: 'Select type', value: '' },
+  { label: 'Mobile Stockist', value: 'mobile-stockist' },
+  { label: 'Platinum', value: 'platinum' },
+  { label: 'Gold', value: 'gold' },
+  { label: 'Silver', value: 'silver' }
+];
+
+const packageTypeOptions = [
+  { label: 'Select package', value: '' },
+  { label: 'Platinum Package', value: 'platinum-package' },
+  { label: 'Gold Package', value: 'gold-package' },
+  { label: 'Silver Package', value: 'silver-package' }
+];
+
+const yesNoOptions = [
+  { label: 'Select option', value: '' },
+  { label: 'Yes', value: 'yes' },
+  { label: 'No', value: 'no' }
+];
+
+const paymentModeOptions = [
+  { label: 'Select mode', value: '' },
+  { label: 'Cash', value: 'cash' },
+  { label: 'Bank Transfer', value: 'bank-transfer' },
+  { label: 'E-Wallet', value: 'e-wallet' },
+  { label: 'Cheque', value: 'cheque' }
+];
+
+const paymentTypeOptions = [
+  { label: 'Select type', value: '' },
+  { label: 'Maya', value: 'maya' },
+  { label: 'GCash', value: 'gcash' },
+  { label: 'BDO', value: 'bdo' },
+  { label: 'BPI', value: 'bpi' }
+];
+
+const discountOptions = [
+  { label: 'No discount', value: '0' },
+  { label: '5%', value: '5' },
+  { label: '10%', value: '10' },
+  { label: '15%', value: '15' },
+  { label: '20%', value: '20' }
+];
+
+const currencyFormatter = new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP'
+});
+
+function parseNumber(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function EncoderPage() {
+  const [form, setForm] = useState<EncoderFormState>(initialState);
+
+  const handleFieldChange = (field: keyof EncoderFormState, value: string | boolean) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value
+    }));
+  };
+
+  const { priceAfterDiscount, totalSales } = useMemo(() => {
+    const originalPrice = parseNumber(form.originalPrice);
+    const quantity = parseNumber(form.quantity);
+    const discountRate = parseNumber(form.discount) / 100;
+    const oneTimeDiscount = parseNumber(form.oneTimeDiscount);
+
+    const computedPriceAfterDiscount = Math.max(0, originalPrice * (1 - discountRate));
+    const computedTotalSales = Math.max(0, quantity * computedPriceAfterDiscount - oneTimeDiscount);
+
+    return {
+      priceAfterDiscount: computedPriceAfterDiscount,
+      totalSales: computedTotalSales
+    };
+  }, [form.discount, form.oneTimeDiscount, form.originalPrice, form.quantity]);
+
+  const saveEntry = () => {
+    window.alert('Entry saved successfully!');
+  };
+
+  const clearForm = () => {
+    setForm(initialState);
+  };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
+
+      <div className="erp-card p-6">
+        <div className="erp-grid-main">
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-lg font-semibold erp-section-title">Transaction Details</h2>
+              <div className="space-y-4 mt-4">
+                <FormSelect
+                  label="Event"
+                  value={form.event}
+                  onChange={(value) => handleFieldChange('event', value)}
+                  options={eventOptions}
+                />
+                <FormField
+                  label="Date"
+                  type="date"
+                  value={form.date}
+                  onChange={(value) => handleFieldChange('date', value)}
+                />
+                <FormField
+                  label="PO Number"
+                  value={form.poNumber}
+                  onChange={(value) => handleFieldChange('poNumber', value)}
+                />
+                <FormField
+                  label="Member Name"
+                  value={form.memberName}
+                  onChange={(value) => handleFieldChange('memberName', value)}
+                />
+                <FormField
+                  label="Username"
+                  value={form.username}
+                  onChange={(value) => handleFieldChange('username', value)}
+                />
+                <FormToggle
+                  label="New Member?"
+                  checked={form.newMember}
+                  onChange={(value) => handleFieldChange('newMember', value)}
+                />
+                <FormSelect
+                  label="Member Type"
+                  value={form.memberType}
+                  onChange={(value) => handleFieldChange('memberType', value)}
+                  options={memberTypeOptions}
+                />
+                <FormSelect
+                  label="Package Type"
+                  value={form.packageType}
+                  onChange={(value) => handleFieldChange('packageType', value)}
+                  options={packageTypeOptions}
+                />
+                <FormSelect
+                  label="To Blister?"
+                  value={form.toBlister}
+                  onChange={(value) => handleFieldChange('toBlister', value)}
+                  options={yesNoOptions}
+                />
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-lg font-semibold erp-section-title">Pricing &amp; Quantity</h3>
+              <div className="space-y-4 mt-4">
+                <FormField
+                  label="Quantity"
+                  type="number"
+                  value={form.quantity}
+                  onChange={(value) => handleFieldChange('quantity', value)}
+                  min={0}
+                />
+                <FormField
+                  label="Blister Count"
+                  type="number"
+                  value={form.blisterCount}
+                  onChange={(value) => handleFieldChange('blisterCount', value)}
+                  min={0}
+                />
+                <FormField
+                  label="Original Price"
+                  value={form.originalPrice}
+                  onChange={() => undefined}
+                  disabled
+                />
+                <FormSelect
+                  label="Discount"
+                  value={form.discount}
+                  onChange={(value) => handleFieldChange('discount', value)}
+                  options={discountOptions}
+                />
+                <FormField
+                  label="Price After Discount"
+                  value={priceAfterDiscount.toFixed(2)}
+                  onChange={() => undefined}
+                  disabled
+                />
+                <FormField
+                  label="One-Time Discount"
+                  type="number"
+                  value={form.oneTimeDiscount}
+                  onChange={(value) => handleFieldChange('oneTimeDiscount', value)}
+                  min={0}
+                  step="0.01"
+                />
+
+                <div className="erp-surface-soft p-4">
+                  <p className="text-sm mb-1 erp-title-primary">Total Sales</p>
+                  <p className="font-semibold erp-title-primary" style={{ fontSize: 30, lineHeight: '36px' }}>
+                    {currencyFormatter.format(totalSales)}
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-lg font-semibold erp-section-title">Payment &amp; Inventory</h2>
+
+              <div className="space-y-4 mt-4">
+                <h3 className="text-base font-semibold erp-title-primary">Payment Mode</h3>
+                <FormSelect
+                  label="Mode of Payment"
+                  value={form.modeOfPayment}
+                  onChange={(value) => handleFieldChange('modeOfPayment', value)}
+                  options={paymentModeOptions}
+                />
+                <FormSelect
+                  label="Payment Mode Type"
+                  value={form.paymentModeType}
+                  onChange={(value) => handleFieldChange('paymentModeType', value)}
+                  options={paymentTypeOptions}
+                />
+                <FormField
+                  label="Reference Number"
+                  value={form.referenceNumber}
+                  onChange={(value) => handleFieldChange('referenceNumber', value)}
+                />
+
+                <div className="relative pt-6">
+                  <div style={{ borderTop: '1px solid #E5E7EB' }} />
+                  <span
+                    className="text-sm px-2"
+                    style={{
+                      background: '#FFFFFF',
+                      color: '#6B7280',
+                      position: 'absolute',
+                      top: '14px',
+                      left: '12px'
+                    }}
+                  >
+                    Additional Payment
+                  </span>
+                </div>
+
+                <FormSelect
+                  label="Mode of Payment (2)"
+                  value={form.modeOfPayment2}
+                  onChange={(value) => handleFieldChange('modeOfPayment2', value)}
+                  options={paymentModeOptions}
+                />
+                <FormSelect
+                  label="Payment Mode Type (2)"
+                  value={form.paymentModeType2}
+                  onChange={(value) => handleFieldChange('paymentModeType2', value)}
+                  options={paymentTypeOptions}
+                />
+                <FormField
+                  label="Reference Number (2)"
+                  value={form.referenceNumber2}
+                  onChange={(value) => handleFieldChange('referenceNumber2', value)}
+                />
+                <FormField
+                  label="Amount (2)"
+                  type="number"
+                  value={form.amount2}
+                  onChange={(value) => handleFieldChange('amount2', value)}
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-lg font-semibold erp-section-title">Inventory Movement</h3>
+              <div className="space-y-4 mt-4">
+                <FormField
+                  label="Released (Bottle)"
+                  type="number"
+                  value={form.releasedBottle}
+                  onChange={(value) => handleFieldChange('releasedBottle', value)}
+                  min={0}
+                />
+                <FormField
+                  label="Released (Blister)"
+                  type="number"
+                  value={form.releasedBlister}
+                  onChange={(value) => handleFieldChange('releasedBlister', value)}
+                  min={0}
+                />
+                <FormField
+                  label="To Follow (Bottle)"
+                  type="number"
+                  value={form.toFollowBottle}
+                  onChange={(value) => handleFieldChange('toFollowBottle', value)}
+                  min={0}
+                />
+                <FormField
+                  label="To Follow (Blister)"
+                  type="number"
+                  value={form.toFollowBlister}
+                  onChange={(value) => handleFieldChange('toFollowBlister', value)}
+                  min={0}
+                />
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-lg font-semibold erp-section-title">Remarks</h3>
+              <div className="mt-4">
+                <textarea
+                  className="erp-textarea"
+                  value={form.remarks}
+                  onChange={(event) => handleFieldChange('remarks', event.target.value)}
+                />
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 pt-6 mt-8" style={{ borderTop: '1px solid #E5E7EB' }}>
+          <button type="button" className="erp-btn-primary" onClick={saveEntry}>
+            Save Entry
+          </button>
+          <button type="button" className="erp-btn-danger" onClick={clearForm}>
+            Clear Form
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
