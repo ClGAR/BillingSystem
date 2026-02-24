@@ -1,7 +1,7 @@
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-export type DashboardPage = 'dashboard' | 'encoder' | 'sales-report' | 'inventory-report';
+export type DashboardPage = 'dashboard' | 'sales-report' | 'inventory-report';
 
 type NavigationProps = {
   activePage: DashboardPage;
@@ -15,7 +15,6 @@ type TabConfig = {
 
 const tabs: TabConfig[] = [
   { label: 'Dashboard', page: 'dashboard' },
-  { label: 'Encoder', page: 'encoder' },
   { label: 'Reports' },
   { label: 'Inventory Report', page: 'inventory-report' },
   { label: 'Sales Report', page: 'sales-report' },

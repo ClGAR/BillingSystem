@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './styles.css';
 import { Navigation, type DashboardPage } from './components/navigation';
-import { EncoderPage } from './components/encoder-page';
 import { SalesReportPage } from './components/sales-report-page';
 import { InventoryReportPage } from './components/inventory-report-page';
 
@@ -35,7 +34,7 @@ function DashboardPageContent() {
   );
 }
 
-export function SalesDashboardEncoderApp({ initialPage = 'encoder' }: SalesDashboardEncoderAppProps) {
+export function SalesDashboardEncoderApp({ initialPage = 'dashboard' }: SalesDashboardEncoderAppProps) {
   const [activePage, setActivePage] = useState<DashboardPage>(initialPage);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ export function SalesDashboardEncoderApp({ initialPage = 'encoder' }: SalesDashb
         <Navigation activePage={activePage} onPageChange={setActivePage} />
         <div className="mt-6">
           {activePage === 'dashboard' && <DashboardPageContent />}
-          {activePage === 'encoder' && <EncoderPage />}
           {activePage === 'sales-report' && <SalesReportPage />}
           {activePage === 'inventory-report' && <InventoryReportPage />}
         </div>

@@ -68,7 +68,7 @@ export default function App() {
             path="/sales-dashboard"
             element={<SalesDashboardEncoderApp initialPage="dashboard" />}
           />
-          <Route path="/encoder" element={<SalesDashboardEncoderApp initialPage="encoder" />} />
+          <Route path="/encoder" element={<Navigate to="/sales-dashboard" replace />} />
           <Route path="/sales-dashboard-legacy" element={<SalesDashboardLayout />}>
             <Route index element={<SalesDashboardHome />} />
             <Route path="encoder" element={<SalesDashboardEncoderPage />} />
