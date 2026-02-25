@@ -1,5 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Printer } from 'lucide-react';
+import {
+  fetchInventoryReport,
+  type InventoryReportRecord
+} from '../../services/inventoryReport.service';
 
 type InventoryRow = {
   name: string;
@@ -21,111 +25,98 @@ type InventoryRow = {
   amount: number;
 };
 
-const rows: InventoryRow[] = [
-  {
-    name: 'Juan Dela Cruz',
-    ggTransNo: 'GG-2024-001',
-    pofNumber: 'POF-12345',
-    packagePlat: 1,
-    packageGold: 0,
-    packageSilver: 0,
-    retailBottle: 2,
-    retailBlister: 5,
-    retailVoucher: 0,
-    retailDisc: 0,
-    bottles: 15,
-    blisters: 30,
-    releasedBottle: 10,
-    releasedBlister: 20,
-    toFollowBottle: 5,
-    toFollowBlister: 10,
-    amount: 125000
-  },
-  {
-    name: 'Maria Santos',
-    ggTransNo: 'GG-2024-002',
-    pofNumber: 'POF-12346',
-    packagePlat: 0,
-    packageGold: 1,
-    packageSilver: 0,
-    retailBottle: 1,
-    retailBlister: 8,
-    retailVoucher: 1,
-    retailDisc: 0,
-    bottles: 10,
-    blisters: 25,
-    releasedBottle: 8,
-    releasedBlister: 18,
-    toFollowBottle: 2,
-    toFollowBlister: 7,
-    amount: 98000
-  },
-  {
-    name: 'Pedro Reyes',
-    ggTransNo: 'GG-2024-003',
-    pofNumber: 'POF-12347',
-    packagePlat: 0,
-    packageGold: 0,
-    packageSilver: 1,
-    retailBottle: 3,
-    retailBlister: 4,
-    retailVoucher: 0,
-    retailDisc: 1,
-    bottles: 12,
-    blisters: 20,
-    releasedBottle: 9,
-    releasedBlister: 15,
-    toFollowBottle: 3,
-    toFollowBlister: 5,
-    amount: 78000
-  },
-  {
-    name: 'Ana Villanueva',
-    ggTransNo: 'GG-2024-004',
-    pofNumber: 'POF-12348',
-    packagePlat: 1,
-    packageGold: 0,
-    packageSilver: 0,
-    retailBottle: 2,
-    retailBlister: 6,
-    retailVoucher: 1,
-    retailDisc: 0,
-    bottles: 16,
-    blisters: 28,
-    releasedBottle: 11,
-    releasedBlister: 22,
-    toFollowBottle: 5,
-    toFollowBlister: 6,
-    amount: 132000
-  },
-  {
-    name: 'Carlos Lim',
-    ggTransNo: 'GG-2024-005',
-    pofNumber: 'POF-12349',
-    packagePlat: 0,
-    packageGold: 1,
-    packageSilver: 1,
-    retailBottle: 4,
-    retailBlister: 7,
-    retailVoucher: 0,
-    retailDisc: 0,
-    bottles: 18,
-    blisters: 34,
-    releasedBottle: 12,
-    releasedBlister: 24,
-    toFollowBottle: 6,
-    toFollowBlister: 10,
-    amount: 156000
-  }
-];
-
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP'
 });
 
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mapInventoryRecordToRow(record: InventoryReportRecord): InventoryRow {
+  const saleEntryId = record.sale_entry_id != null ? String(record.sale_entry_id) : '';
+  const packageType = (record.package_type ?? '').toLowerCase();
+  const quantity = toNumber(record.quantity);
+  const blisterCount = toNumber(record.blister_count);
+  const releasedBottle = toNumber(record.released_bottle);
+  const releasedBlister = toNumber(record.released_blister);
+  const toFollowBottle = toNumber(record.to_follow_bottle);
+  const toFollowBlister = toNumber(record.to_follow_blister);
+  const isPlatinum = packageType.includes('plat');
+  const isGold = packageType.includes('gold');
+  const isSilver = packageType.includes('silver');
+  const isPackageRow = isPlatinum || isGold || isSilver;
+
+  return {
+    name: record.member_name || '—',
+    ggTransNo: saleEntryId ? saleEntryId.slice(0, 8) : '—',
+    pofNumber: record.po_number || '—',
+    packagePlat: isPlatinum ? quantity : 0,
+    packageGold: isGold ? quantity : 0,
+    packageSilver: isSilver ? quantity : 0,
+    retailBottle: isPackageRow ? 0 : quantity,
+    retailBlister: isPackageRow ? 0 : blisterCount,
+    retailVoucher: 0,
+    retailDisc: 0,
+    bottles: releasedBottle + toFollowBottle,
+    blisters: releasedBlister + toFollowBlister,
+    releasedBottle,
+    releasedBlister,
+    toFollowBottle,
+    toFollowBlister,
+    amount: toNumber(record.total_sales)
+  };
+}
+
 export function InventoryReportPage() {
-  const totalAmount = useMemo(() => rows.reduce((sum, row) => sum + row.amount, 0), []);
+  const [rows, setRows] = useState<InventoryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dateFrom] = useState('');
+  const [dateTo] = useState('');
+  const [search] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRows() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchInventoryReport({
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+          search: search || undefined
+        });
+        if (!isMounted) {
+          return;
+        }
+        setRows(data.map(mapInventoryRecordToRow));
+      } catch (fetchError) {
+        if (!isMounted) {
+          return;
+        }
+        const message =
+          fetchError instanceof Error ? fetchError.message : 'Failed to load inventory report.';
+        setRows([]);
+        setError(message);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadRows();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dateFrom, dateTo, search]);
+
+  const totalAmount = useMemo(() => rows.reduce((sum, row) => sum + row.amount, 0), [rows]);
   const reportDate = new Date().toLocaleDateString('en-PH', {
     year: 'numeric',
     month: 'long',
@@ -199,27 +190,50 @@ export function InventoryReportPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.ggTransNo}>
-                  <td>{row.name}</td>
-                  <td>{row.ggTransNo}</td>
-                  <td>{row.pofNumber}</td>
-                  <td className="erp-border-left">{row.packagePlat}</td>
-                  <td>{row.packageGold}</td>
-                  <td>{row.packageSilver}</td>
-                  <td className="erp-border-left">{row.retailBottle}</td>
-                  <td>{row.retailBlister}</td>
-                  <td>{row.retailVoucher}</td>
-                  <td>{row.retailDisc}</td>
-                  <td className="erp-border-left">{row.bottles}</td>
-                  <td>{row.blisters}</td>
-                  <td className="erp-border-left">{row.releasedBottle}</td>
-                  <td>{row.releasedBlister}</td>
-                  <td className="erp-border-left">{row.toFollowBottle}</td>
-                  <td>{row.toFollowBlister}</td>
-                  <td className="erp-border-left num">{currencyFormatter.format(row.amount)}</td>
+              {loading ? (
+                <tr>
+                  <td colSpan={17} className="text-center">
+                    Loading...
+                  </td>
                 </tr>
-              ))}
+              ) : null}
+              {!loading && error ? (
+                <tr>
+                  <td colSpan={17} className="text-center text-red-600">
+                    {error}
+                  </td>
+                </tr>
+              ) : null}
+              {!loading && !error && rows.length === 0 ? (
+                <tr>
+                  <td colSpan={17} className="text-center">
+                    No records found.
+                  </td>
+                </tr>
+              ) : null}
+              {!loading && !error
+                ? rows.map((row, index) => (
+                    <tr key={`${row.ggTransNo}-${row.pofNumber}-${index}`}>
+                      <td>{row.name}</td>
+                      <td>{row.ggTransNo}</td>
+                      <td>{row.pofNumber}</td>
+                      <td className="erp-border-left">{row.packagePlat}</td>
+                      <td>{row.packageGold}</td>
+                      <td>{row.packageSilver}</td>
+                      <td className="erp-border-left">{row.retailBottle}</td>
+                      <td>{row.retailBlister}</td>
+                      <td>{row.retailVoucher}</td>
+                      <td>{row.retailDisc}</td>
+                      <td className="erp-border-left">{row.bottles}</td>
+                      <td>{row.blisters}</td>
+                      <td className="erp-border-left">{row.releasedBottle}</td>
+                      <td>{row.releasedBlister}</td>
+                      <td className="erp-border-left">{row.toFollowBottle}</td>
+                      <td>{row.toFollowBlister}</td>
+                      <td className="erp-border-left num">{currencyFormatter.format(row.amount)}</td>
+                    </tr>
+                  ))
+                : null}
               <tr className="erp-border-top-strong" style={{ background: '#F0F4FF' }}>
                 <td colSpan={16} className="text-right font-semibold">
                   Total Amount:
