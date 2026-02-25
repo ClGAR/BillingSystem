@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { FormField } from './form-field';
+import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
 import {
   fetchPaymentBreakdown,
   fetchSalesEntries,
@@ -25,6 +26,10 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getTodayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function SalesReportPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -32,6 +37,7 @@ export function SalesReportPage() {
   const [entriesRows, setEntriesRows] = useState<SalesEntryRecord[]>([]);
   const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
   const [paymentTotal, setPaymentTotal] = useState(0);
+  const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,18 +45,22 @@ export function SalesReportPage() {
     try {
       setLoading(true);
       setError(null);
-      const [entries, paymentBreakdown] = await Promise.all([
+      const selectedCashDate = params?.dateFrom || getTodayDateString();
+      const [entries, paymentBreakdown, cashCount] = await Promise.all([
         fetchSalesEntries(params ?? {}),
-        fetchPaymentBreakdown(params ?? {})
+        fetchPaymentBreakdown(params ?? {}),
+        getDailyCashCount(selectedCashDate)
       ]);
       setEntriesRows(entries);
       setPaymentRows(paymentBreakdown.rows);
       setPaymentTotal(paymentBreakdown.total);
+      setCashCountData(cashCount);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : 'Failed to load sales report.';
       setEntriesRows([]);
       setPaymentRows([]);
       setPaymentTotal(0);
+      setCashCountData(null);
       setError(message);
     } finally {
       setLoading(false);
@@ -212,7 +222,51 @@ export function SalesReportPage() {
         <div>
           <div className="erp-card p-6 mb-6">
             <h2 className="text-lg font-semibold mb-4 erp-title-primary">Cash Count Table</h2>
-            <p style={{ color: '#6B7280' }}>Cash Count: Manual section (not connected)</p>
+            {loading ? <p style={{ color: '#6B7280' }}>Loading...</p> : null}
+            {!loading && !cashCountData ? (
+              <p style={{ color: '#6B7280' }}>No cash count saved for this date</p>
+            ) : null}
+            {!loading && cashCountData ? (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="erp-table">
+                    <thead>
+                      <tr>
+                        <th>Denomination</th>
+                        <th className="num">Pieces</th>
+                        <th className="num">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cashCountData.lines.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="text-center">
+                            No cash count lines for this date.
+                          </td>
+                        </tr>
+                      ) : (
+                        cashCountData.lines.map((line, index) => (
+                          <tr key={`${line.denomination}-${index}`}>
+                            <td>{line.denomination}</td>
+                            <td className="num">{line.pieces}</td>
+                            <td className="num">{currencyFormatter.format(line.amount)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="erp-surface-soft p-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium erp-title-primary">Total Cash on Hand</span>
+                    <span className="text-lg font-semibold erp-title-primary">
+                      {currencyFormatter.format(cashCountData.header.total_cash)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
 
           <div className="erp-card p-6">
