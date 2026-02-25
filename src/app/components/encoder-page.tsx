@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FormField } from './form-field';
 import { FormSelect } from './form-select';
 import { FormToggle } from './form-toggle';
+import { supabase } from '../../lib/supabaseClient';
 
 type EncoderFormState = {
   event: string;
@@ -148,7 +149,128 @@ export function EncoderPage() {
     };
   }, [form.discount, form.oneTimeDiscount, form.originalPrice, form.quantity]);
 
-  const saveEntry = () => {
+  const saveEntry = async () => {
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      window.alert(`Failed to get current user: ${authError.message}`);
+      return;
+    }
+
+    const entryPayload = {
+      event: form.event || null,
+      sale_date: form.date || null,
+      po_number: form.poNumber || null,
+      member_name: form.memberName || null,
+      username: form.username || null,
+      is_new_member: form.newMember,
+      member_type: form.memberType || null,
+      package_type: form.packageType || null,
+      to_blister: form.toBlister ? form.toBlister === 'yes' : null,
+      quantity: parseNumber(form.quantity),
+      blister_count: parseNumber(form.blisterCount),
+      original_price: parseNumber(form.originalPrice),
+      discount_percent: parseNumber(form.discount),
+      price_after_discount: priceAfterDiscount,
+      one_time_discount: parseNumber(form.oneTimeDiscount),
+      total_sales: totalSales,
+      remarks: form.remarks || null,
+      created_by: authData.user?.id ?? null
+    };
+
+    const { data: entry, error: entryError } = await supabase
+      .from('sales_entries')
+      .insert(entryPayload)
+      .select()
+      .single();
+
+    if (entryError || !entry?.id) {
+      window.alert(`Failed to save entry: ${entryError?.message ?? 'Unknown error.'}`);
+      return;
+    }
+
+    console.log('Inserted sales_entries id:', entry.id);
+
+    const warnings: string[] = [];
+
+    const firstPaymentAmount = totalSales;
+    const secondPaymentAmount = parseNumber(form.amount2);
+    const paymentRows: Array<{
+      sale_entry_id: string;
+      payment_no: number;
+      mode: string | null;
+      mode_type: string | null;
+      reference_no: string | null;
+      amount: number;
+    }> = [];
+
+    if (form.modeOfPayment || firstPaymentAmount > 0) {
+      paymentRows.push({
+        sale_entry_id: String(entry.id),
+        payment_no: 1,
+        mode: form.modeOfPayment || null,
+        mode_type: form.paymentModeType || null,
+        reference_no: form.referenceNumber || null,
+        amount: firstPaymentAmount
+      });
+    }
+
+    if (form.modeOfPayment2 || secondPaymentAmount > 0) {
+      paymentRows.push({
+        sale_entry_id: String(entry.id),
+        payment_no: 2,
+        mode: form.modeOfPayment2 || null,
+        mode_type: form.paymentModeType2 || null,
+        reference_no: form.referenceNumber2 || null,
+        amount: secondPaymentAmount
+      });
+    }
+
+    if (paymentRows.length > 0) {
+      const { data: insertedPayments, error: paymentsError } = await supabase
+        .from('sales_entry_payments')
+        .insert(paymentRows)
+        .select();
+
+      if (paymentsError) {
+        warnings.push(`Failed to save payments: ${paymentsError.message}`);
+      }
+      console.log('Payments inserted:', insertedPayments ?? []);
+    } else {
+      console.log('Payments inserted:', []);
+    }
+
+    const inventoryPayload = {
+      sale_entry_id: String(entry.id),
+      released_bottle: parseNumber(form.releasedBottle),
+      released_blister: parseNumber(form.releasedBlister),
+      to_follow_bottle: parseNumber(form.toFollowBottle),
+      to_follow_blister: parseNumber(form.toFollowBlister)
+    };
+    const hasInventoryData =
+      inventoryPayload.released_bottle > 0 ||
+      inventoryPayload.released_blister > 0 ||
+      inventoryPayload.to_follow_bottle > 0 ||
+      inventoryPayload.to_follow_blister > 0;
+
+    if (hasInventoryData) {
+      const { data: insertedInventory, error: inventoryError } = await supabase
+        .from('sales_entry_inventory')
+        .insert(inventoryPayload)
+        .select();
+
+      if (inventoryError) {
+        warnings.push(`Failed to save inventory: ${inventoryError.message}`);
+      }
+      console.log('Inventory inserted:', insertedInventory ?? []);
+    } else {
+      console.log('Inventory inserted:', []);
+    }
+
+    if (warnings.length > 0) {
+      window.alert(`Entry saved, but some related records failed:\n${warnings.join('\n')}`);
+      return;
+    }
+
     window.alert('Entry saved successfully!');
   };
 
