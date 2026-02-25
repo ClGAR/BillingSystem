@@ -156,16 +156,18 @@ export function EncoderPage() {
       return;
     }
 
+    const toBlisterValue = form.toBlister.toLowerCase() === 'yes';
+
     const entryPayload = {
       event: form.event || null,
       sale_date: form.date || null,
       po_number: form.poNumber || null,
       member_name: form.memberName || null,
       username: form.username || null,
-      is_new_member: form.newMember,
+      is_new_member: Boolean(form.newMember),
       member_type: form.memberType || null,
       package_type: form.packageType || null,
-      to_blister: form.toBlister ? form.toBlister === 'yes' : null,
+      to_blister: toBlisterValue,
       quantity: parseNumber(form.quantity),
       blister_count: parseNumber(form.blisterCount),
       original_price: parseNumber(form.originalPrice),
