@@ -321,7 +321,7 @@ export function EncoderPage() {
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
         <FormField label="Location" value={form.location} onChange={() => undefined} disabled />
         <FormField
           label="Date"
@@ -329,11 +329,14 @@ export function EncoderPage() {
           value={form.date}
           onChange={(value) => handleFieldChange('date', value)}
         />
-        <FormField
-          label="PO Number"
-          value={form.poNumber}
-          onChange={(value) => handleFieldChange('poNumber', value)}
-        />
+        <div className="md:col-span-2 lg:col-span-2">
+          <FormField
+            label="POF/PO Number"
+            value={form.poNumber}
+            onChange={(value) => handleFieldChange('poNumber', value)}
+          />
+        </div>
+
         <FormField
           label="Member Name"
           value={form.memberName}
@@ -349,6 +352,8 @@ export function EncoderPage() {
           checked={form.newMember}
           onChange={(value) => handleFieldChange('newMember', value)}
         />
+        <div className="hidden lg:block" aria-hidden="true" />
+
         <FormSelect
           label="Member Type"
           value={form.memberType}
@@ -373,6 +378,7 @@ export function EncoderPage() {
           onChange={() => undefined}
           disabled
         />
+
         <FormField
           label="Quantity"
           type="number"
@@ -399,6 +405,7 @@ export function EncoderPage() {
           onChange={() => undefined}
           disabled
         />
+
         <FormField
           label="One-Time Discount"
           type="number"
@@ -407,14 +414,14 @@ export function EncoderPage() {
           min={0}
           step="0.01"
         />
-        <div className="md:col-span-2 xl:col-span-2">
-          <div className="erp-surface-soft p-4 h-full">
-            <p className="text-sm mb-1 erp-title-primary">Total Sales</p>
-            <p className="font-semibold erp-title-primary" style={{ fontSize: 30, lineHeight: '36px' }}>
-              {currencyFormatter.format(totalSales)}
-            </p>
-          </div>
+        <div className="md:col-span-2 lg:col-span-3">
+          <FormField label="Total Sales" value={currencyFormatter.format(totalSales)} onChange={() => undefined} disabled />
         </div>
+
+        <div className="md:col-span-2 lg:col-span-4 border-t border-gray-200 pt-4">
+          <h2 className="text-base font-semibold erp-section-title">Payment &amp; Inventory</h2>
+        </div>
+
         <FormSelect
           label="Mode of Payment"
           value={form.modeOfPayment}
@@ -427,11 +434,14 @@ export function EncoderPage() {
           onChange={(value) => handleFieldChange('paymentModeType', value)}
           options={paymentTypeOptions}
         />
-        <FormField
-          label="Reference Number"
-          value={form.referenceNumber}
-          onChange={(value) => handleFieldChange('referenceNumber', value)}
-        />
+        <div className="md:col-span-2 lg:col-span-2">
+          <FormField
+            label="Reference Number"
+            value={form.referenceNumber}
+            onChange={(value) => handleFieldChange('referenceNumber', value)}
+          />
+        </div>
+
         <FormSelect
           label="Mode of Payment (2)"
           value={form.modeOfPayment2}
@@ -457,6 +467,7 @@ export function EncoderPage() {
           min={0}
           step="0.01"
         />
+
         <FormField
           label="Released (Bottle)"
           type="number"
@@ -485,7 +496,8 @@ export function EncoderPage() {
           onChange={(value) => handleFieldChange('toFollowBlister', value)}
           min={0}
         />
-        <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
+
+        <div className="md:col-span-2 lg:col-span-4">
           <label className="block">
             <span className="erp-input-label">Remarks</span>
             <textarea
@@ -494,6 +506,13 @@ export function EncoderPage() {
               onChange={(event) => handleFieldChange('remarks', event.target.value)}
             />
           </label>
+        </div>
+
+        <div className="md:col-span-2 lg:col-span-2">
+          <FormField label="Received By" value="" onChange={() => undefined} disabled />
+        </div>
+        <div className="md:col-span-2 lg:col-span-2">
+          <FormField label="Collected By" value="" onChange={() => undefined} disabled />
         </div>
       </div>
 
