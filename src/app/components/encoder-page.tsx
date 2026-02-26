@@ -5,7 +5,7 @@ import { FormToggle } from './form-toggle';
 import { supabase } from '../../lib/supabaseClient';
 
 type EncoderFormState = {
-  event: string;
+  location: string;
   date: string;
   poNumber: string;
   memberName: string;
@@ -33,8 +33,10 @@ type EncoderFormState = {
   remarks: string;
 };
 
+const DEFAULT_LOCATION = 'Davao Office';
+
 const initialState: EncoderFormState = {
-  event: '',
+  location: DEFAULT_LOCATION,
   date: '',
   poNumber: '',
   memberName: '',
@@ -61,13 +63,6 @@ const initialState: EncoderFormState = {
   toFollowBlister: '',
   remarks: ''
 };
-
-const eventOptions = [
-  { label: 'Select event', value: '' },
-  { label: 'Promo Event 1', value: 'promo-event-1' },
-  { label: 'Promo Event 2', value: 'promo-event-2' },
-  { label: 'Regular Sale', value: 'regular-sale' }
-];
 
 const memberTypeOptions = [
   { label: 'Select type', value: '' },
@@ -125,6 +120,19 @@ function parseNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isMissingColumnError(error: { message?: string; code?: string } | null, column: string): boolean {
+  if (!error) {
+    return false;
+  }
+
+  const normalized = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase();
+  const columnName = column.toLowerCase();
+  return (
+    normalized.includes(columnName) &&
+    (normalized.includes('does not exist') || normalized.includes('could not find'))
+  );
+}
+
 export function EncoderPage() {
   const [form, setForm] = useState<EncoderFormState>(initialState);
 
@@ -159,8 +167,9 @@ export function EncoderPage() {
 
     const toBlisterValue = form.toBlister.toLowerCase() === 'yes';
 
-    const entryPayload = {
-      event: form.event || null,
+    const locationValue = form.location || DEFAULT_LOCATION;
+
+    const baseEntryPayload: Record<string, unknown> = {
       sale_date: form.date || null,
       po_number: form.poNumber || null,
       member_name: form.memberName || null,
@@ -180,14 +189,39 @@ export function EncoderPage() {
       created_by: authData.user?.id ?? null
     };
 
-    const { data: entry, error: entryError } = await supabase
-      .from('sales_entries')
-      .insert(entryPayload)
-      .select()
-      .single();
+    const { error: locationProbeError } = await supabase.from('sales_entries').select('location').limit(1);
+    const locationFieldCandidates: Array<'location' | 'event'> = locationProbeError
+      ? ['event', 'location']
+      : ['location', 'event'];
 
-    if (entryError || !entry?.id) {
-      window.alert(`Failed to save entry: ${entryError?.message ?? 'Unknown error.'}`);
+    let entry: { id: string | number } | null = null;
+    let entryErrorMessage = 'Unknown error.';
+
+    for (const locationField of locationFieldCandidates) {
+      const entryPayload: Record<string, unknown> = {
+        ...baseEntryPayload,
+        [locationField]: locationValue
+      };
+
+      const { data: insertedEntry, error: entryError } = await supabase
+        .from('sales_entries')
+        .insert(entryPayload)
+        .select()
+        .single();
+
+      if (!entryError && insertedEntry?.id) {
+        entry = insertedEntry;
+        break;
+      }
+
+      entryErrorMessage = entryError?.message ?? 'Unknown error.';
+      if (!isMissingColumnError(entryError, locationField)) {
+        break;
+      }
+    }
+
+    if (!entry?.id) {
+      window.alert(`Failed to save entry: ${entryErrorMessage}`);
       return;
     }
 
@@ -291,11 +325,11 @@ export function EncoderPage() {
             <section>
               <h2 className="text-lg font-semibold erp-section-title">Transaction Details</h2>
               <div className="space-y-4 mt-4">
-                <FormSelect
-                  label="Event"
-                  value={form.event}
-                  onChange={(value) => handleFieldChange('event', value)}
-                  options={eventOptions}
+                <FormField
+                  label="Location"
+                  value={form.location}
+                  onChange={() => undefined}
+                  disabled
                 />
                 <FormField
                   label="Date"
