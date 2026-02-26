@@ -17,7 +17,7 @@ type EncoderFormState = {
   quantity: string;
   blisterCount: string;
   originalPrice: string;
-  discount: string;
+  discountAmount: number;
   oneTimeDiscount: string;
   modeOfPayment: string;
   paymentModeType: string;
@@ -51,7 +51,7 @@ const initialState: EncoderFormState = {
   quantity: '',
   blisterCount: '',
   originalPrice: '0',
-  discount: '0',
+  discountAmount: 0,
   oneTimeDiscount: '',
   modeOfPayment: '',
   paymentModeType: '',
@@ -126,13 +126,31 @@ const paymentTypeOptions = [
   { label: 'BPI', value: 'bpi' }
 ];
 
-const discountOptions = [
-  { label: 'No discount', value: '0' },
-  { label: '5%', value: '5' },
-  { label: '10%', value: '10' },
-  { label: '15%', value: '15' },
-  { label: '20%', value: '20' }
-];
+const DISCOUNT_OPTIONS = [
+  { label: 'No Discount', value: 0 },
+  { label: '₱150', value: 150 },
+  { label: '₱500', value: 500 },
+  { label: '₱60', value: 60 },
+  { label: '₱180', value: 180 },
+  { label: '₱200', value: 200 },
+  { label: '₱80', value: 80 },
+  { label: '₱240', value: 240 },
+  { label: '₱800', value: 800 },
+  { label: '₱1748', value: 1748 },
+  { label: '40% (₱1,520)', value: 1520 },
+  { label: '45% (₱1,710)', value: 1710 },
+  { label: '47.5% (₱1,805)', value: 1805 },
+  { label: '50% (₱1,900)', value: 1900 },
+  { label: '40% (₱520)', value: 520 },
+  { label: '45% (₱585)', value: 585 },
+  { label: '47.5% (₱618)', value: 618 },
+  { label: '50% (₱650)', value: 650 }
+] as const;
+
+const discountOptions = DISCOUNT_OPTIONS.map((option) => ({
+  label: option.label,
+  value: String(option.value)
+}));
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
@@ -167,7 +185,7 @@ function isMissingColumnError(error: { message?: string; code?: string } | null,
 export function EncoderPage() {
   const [form, setForm] = useState<EncoderFormState>(initialState);
 
-  const handleFieldChange = (field: keyof EncoderFormState, value: string | boolean) => {
+  const handleFieldChange = (field: keyof EncoderFormState, value: string | boolean | number) => {
     setForm((previous) => {
       const nextForm = {
         ...previous,
@@ -189,18 +207,17 @@ export function EncoderPage() {
 
   const { priceAfterDiscount, totalSales } = useMemo(() => {
     const originalPrice = parseNumber(form.originalPrice);
-    const discountRate = parseNumber(form.discount) / 100;
+    const discountAmount = form.discountAmount;
     const oneTimeDiscount = parseNumber(form.oneTimeDiscount);
 
-    const discountedPrice = Math.max(0, originalPrice * (1 - discountRate));
-    const computedPriceAfterDiscount = Math.max(0, discountedPrice - oneTimeDiscount);
-    const computedTotalSales = computedPriceAfterDiscount;
+    const computedPriceAfterDiscount = Math.max(0, originalPrice - discountAmount);
+    const computedTotalSales = Math.max(0, computedPriceAfterDiscount - oneTimeDiscount);
 
     return {
       priceAfterDiscount: computedPriceAfterDiscount,
       totalSales: computedTotalSales
     };
-  }, [form.discount, form.oneTimeDiscount, form.originalPrice]);
+  }, [form.discountAmount, form.oneTimeDiscount, form.originalPrice]);
 
   const saveEntry = async () => {
     const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -212,6 +229,13 @@ export function EncoderPage() {
     const toBlisterValue = form.toBlister.toLowerCase() === 'yes';
 
     const locationValue = form.location || DEFAULT_LOCATION;
+    const selectedDiscountAmount = form.discountAmount;
+    const additionalDiscountAmount = parseNumber(form.oneTimeDiscount);
+    const { error: discountAmountProbeError } = await supabase
+      .from('sales_entries')
+      .select('discount_amount')
+      .limit(1);
+    const hasDiscountAmountColumn = !isMissingColumnError(discountAmountProbeError, 'discount_amount');
 
     const baseEntryPayload: Record<string, unknown> = {
       sale_date: form.date || null,
@@ -225,13 +249,19 @@ export function EncoderPage() {
       quantity: parseNumber(form.quantity),
       blister_count: parseNumber(form.blisterCount),
       original_price: parseNumber(form.originalPrice),
-      discount_percent: parseNumber(form.discount),
+      discount_percent: 0,
       price_after_discount: priceAfterDiscount,
-      one_time_discount: parseNumber(form.oneTimeDiscount),
+      one_time_discount: hasDiscountAmountColumn
+        ? additionalDiscountAmount
+        : selectedDiscountAmount + additionalDiscountAmount,
       total_sales: totalSales,
       remarks: form.remarks || null,
       created_by: authData.user?.id ?? null
     };
+
+    if (hasDiscountAmountColumn) {
+      baseEntryPayload.discount_amount = selectedDiscountAmount;
+    }
 
     const { error: locationProbeError } = await supabase.from('sales_entries').select('location').limit(1);
     const locationFieldCandidates: Array<'location' | 'event'> = locationProbeError
@@ -460,8 +490,8 @@ export function EncoderPage() {
           <div className="lg:col-span-1">
             <FormSelect
               label="Discount"
-              value={form.discount}
-              onChange={(value) => handleFieldChange('discount', value)}
+              value={String(form.discountAmount)}
+              onChange={(value) => handleFieldChange('discountAmount', Number.parseFloat(value) || 0)}
               options={discountOptions}
             />
           </div>
@@ -476,7 +506,7 @@ export function EncoderPage() {
 
           <div className="lg:col-span-1">
             <FormField
-              label="One-Time Discount"
+              label="Additional Discount"
               type="number"
               value={form.oneTimeDiscount}
               onChange={(value) => handleFieldChange('oneTimeDiscount', value)}
