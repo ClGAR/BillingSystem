@@ -102,10 +102,18 @@ const yesNoOptions = [
 
 const paymentModeOptions = [
   { label: 'Select mode', value: '' },
-  { label: 'Cash', value: 'cash' },
-  { label: 'Bank Transfer', value: 'bank-transfer' },
-  { label: 'E-Wallet', value: 'e-wallet' },
-  { label: 'Cheque', value: 'cheque' }
+  { label: 'Cash', value: 'Cash' },
+  { label: 'Bank', value: 'Bank' },
+  { label: 'Maya (IGI)', value: 'Maya (IGI)' },
+  { label: 'Maya (ATC)', value: 'Maya (ATC)' },
+  { label: 'SB Collect (IGI)', value: 'SB Collect (IGI)' },
+  { label: 'SB Collect (ATC)', value: 'SB Collect (ATC)' },
+  { label: 'E-Wallet', value: 'E-Wallet' },
+  { label: 'Cheque', value: 'Cheque' },
+  { label: 'E-Points', value: 'E-Points' },
+  { label: 'Consignment', value: 'Consignment' },
+  { label: 'AR (CSA)', value: 'AR (CSA)' },
+  { label: 'AR (LEADER SUPPORT)', value: 'AR (LEADER SUPPORT)' }
 ];
 
 const paymentTypeOptions = [
