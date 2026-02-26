@@ -1,8 +1,8 @@
 /* Global print rules for all event forms. */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 10mm;
+    size: A4 landscape;
+    margin: 8mm;
   }
 
   html,
@@ -33,6 +33,10 @@
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  #inventory-report-print .overflow-x-auto {
+    overflow: visible !important;
   }
 
   #print-root table {
@@ -144,13 +148,22 @@
 
   #inventory-report-print table {
     width: 100% !important;
+    table-layout: fixed !important;
     border-collapse: collapse !important;
   }
 
   #inventory-report-print th,
   #inventory-report-print td {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    word-break: break-word !important;
+    white-space: normal !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  #inventory-report-print thead th {
+    font-weight: 600 !important;
   }
 
   .no-print {

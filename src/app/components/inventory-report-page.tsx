@@ -162,7 +162,7 @@ export function InventoryReportPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-visible print:max-w-full">
           <table className="erp-table erp-inv-table text-sm" style={{ minWidth: 1400 }}>
             <thead>
               <tr>
