@@ -318,245 +318,192 @@ export function EncoderPage() {
   };
 
   return (
-    <div>
+    <div className="bg-white rounded-lg shadow-sm p-6">
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
-      <div className="erp-card p-6">
-        <div className="erp-grid-main">
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-lg font-semibold erp-section-title">Transaction Details</h2>
-              <div className="space-y-4 mt-4">
-                <FormField
-                  label="Location"
-                  value={form.location}
-                  onChange={() => undefined}
-                  disabled
-                />
-                <FormField
-                  label="Date"
-                  type="date"
-                  value={form.date}
-                  onChange={(value) => handleFieldChange('date', value)}
-                />
-                <FormField
-                  label="PO Number"
-                  value={form.poNumber}
-                  onChange={(value) => handleFieldChange('poNumber', value)}
-                />
-                <FormField
-                  label="Member Name"
-                  value={form.memberName}
-                  onChange={(value) => handleFieldChange('memberName', value)}
-                />
-                <FormField
-                  label="Username"
-                  value={form.username}
-                  onChange={(value) => handleFieldChange('username', value)}
-                />
-                <FormToggle
-                  label="New Member?"
-                  checked={form.newMember}
-                  onChange={(value) => handleFieldChange('newMember', value)}
-                />
-                <FormSelect
-                  label="Member Type"
-                  value={form.memberType}
-                  onChange={(value) => handleFieldChange('memberType', value)}
-                  options={memberTypeOptions}
-                />
-                <FormSelect
-                  label="Package Type"
-                  value={form.packageType}
-                  onChange={(value) => handleFieldChange('packageType', value)}
-                  options={packageTypeOptions}
-                />
-                <FormSelect
-                  label="To Blister?"
-                  value={form.toBlister}
-                  onChange={(value) => handleFieldChange('toBlister', value)}
-                  options={yesNoOptions}
-                />
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-semibold erp-section-title">Pricing &amp; Quantity</h3>
-              <div className="space-y-4 mt-4">
-                <FormField
-                  label="Quantity"
-                  type="number"
-                  value={form.quantity}
-                  onChange={(value) => handleFieldChange('quantity', value)}
-                  min={0}
-                />
-                <FormField
-                  label="Blister Count"
-                  type="number"
-                  value={form.blisterCount}
-                  onChange={(value) => handleFieldChange('blisterCount', value)}
-                  min={0}
-                />
-                <FormField
-                  label="Original Price"
-                  value={form.originalPrice}
-                  onChange={() => undefined}
-                  disabled
-                />
-                <FormSelect
-                  label="Discount"
-                  value={form.discount}
-                  onChange={(value) => handleFieldChange('discount', value)}
-                  options={discountOptions}
-                />
-                <FormField
-                  label="Price After Discount"
-                  value={priceAfterDiscount.toFixed(2)}
-                  onChange={() => undefined}
-                  disabled
-                />
-                <FormField
-                  label="One-Time Discount"
-                  type="number"
-                  value={form.oneTimeDiscount}
-                  onChange={(value) => handleFieldChange('oneTimeDiscount', value)}
-                  min={0}
-                  step="0.01"
-                />
-
-                <div className="erp-surface-soft p-4">
-                  <p className="text-sm mb-1 erp-title-primary">Total Sales</p>
-                  <p className="font-semibold erp-title-primary" style={{ fontSize: 30, lineHeight: '36px' }}>
-                    {currencyFormatter.format(totalSales)}
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-lg font-semibold erp-section-title">Payment &amp; Inventory</h2>
-
-              <div className="space-y-4 mt-4">
-                <h3 className="text-base font-semibold erp-title-primary">Payment Mode</h3>
-                <FormSelect
-                  label="Mode of Payment"
-                  value={form.modeOfPayment}
-                  onChange={(value) => handleFieldChange('modeOfPayment', value)}
-                  options={paymentModeOptions}
-                />
-                <FormSelect
-                  label="Payment Mode Type"
-                  value={form.paymentModeType}
-                  onChange={(value) => handleFieldChange('paymentModeType', value)}
-                  options={paymentTypeOptions}
-                />
-                <FormField
-                  label="Reference Number"
-                  value={form.referenceNumber}
-                  onChange={(value) => handleFieldChange('referenceNumber', value)}
-                />
-
-                <div className="relative pt-6">
-                  <div style={{ borderTop: '1px solid #E5E7EB' }} />
-                  <span
-                    className="text-sm px-2"
-                    style={{
-                      background: '#FFFFFF',
-                      color: '#6B7280',
-                      position: 'absolute',
-                      top: '14px',
-                      left: '12px'
-                    }}
-                  >
-                    Additional Payment
-                  </span>
-                </div>
-
-                <FormSelect
-                  label="Mode of Payment (2)"
-                  value={form.modeOfPayment2}
-                  onChange={(value) => handleFieldChange('modeOfPayment2', value)}
-                  options={paymentModeOptions}
-                />
-                <FormSelect
-                  label="Payment Mode Type (2)"
-                  value={form.paymentModeType2}
-                  onChange={(value) => handleFieldChange('paymentModeType2', value)}
-                  options={paymentTypeOptions}
-                />
-                <FormField
-                  label="Reference Number (2)"
-                  value={form.referenceNumber2}
-                  onChange={(value) => handleFieldChange('referenceNumber2', value)}
-                />
-                <FormField
-                  label="Amount (2)"
-                  type="number"
-                  value={form.amount2}
-                  onChange={(value) => handleFieldChange('amount2', value)}
-                  min={0}
-                  step="0.01"
-                />
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-semibold erp-section-title">Inventory Movement</h3>
-              <div className="space-y-4 mt-4">
-                <FormField
-                  label="Released (Bottle)"
-                  type="number"
-                  value={form.releasedBottle}
-                  onChange={(value) => handleFieldChange('releasedBottle', value)}
-                  min={0}
-                />
-                <FormField
-                  label="Released (Blister)"
-                  type="number"
-                  value={form.releasedBlister}
-                  onChange={(value) => handleFieldChange('releasedBlister', value)}
-                  min={0}
-                />
-                <FormField
-                  label="To Follow (Bottle)"
-                  type="number"
-                  value={form.toFollowBottle}
-                  onChange={(value) => handleFieldChange('toFollowBottle', value)}
-                  min={0}
-                />
-                <FormField
-                  label="To Follow (Blister)"
-                  type="number"
-                  value={form.toFollowBlister}
-                  onChange={(value) => handleFieldChange('toFollowBlister', value)}
-                  min={0}
-                />
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-semibold erp-section-title">Remarks</h3>
-              <div className="mt-4">
-                <textarea
-                  className="erp-textarea"
-                  value={form.remarks}
-                  onChange={(event) => handleFieldChange('remarks', event.target.value)}
-                />
-              </div>
-            </section>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <FormField label="Location" value={form.location} onChange={() => undefined} disabled />
+        <FormField
+          label="Date"
+          type="date"
+          value={form.date}
+          onChange={(value) => handleFieldChange('date', value)}
+        />
+        <FormField
+          label="PO Number"
+          value={form.poNumber}
+          onChange={(value) => handleFieldChange('poNumber', value)}
+        />
+        <FormField
+          label="Member Name"
+          value={form.memberName}
+          onChange={(value) => handleFieldChange('memberName', value)}
+        />
+        <FormField
+          label="Username"
+          value={form.username}
+          onChange={(value) => handleFieldChange('username', value)}
+        />
+        <FormToggle
+          label="New Member?"
+          checked={form.newMember}
+          onChange={(value) => handleFieldChange('newMember', value)}
+        />
+        <FormSelect
+          label="Member Type"
+          value={form.memberType}
+          onChange={(value) => handleFieldChange('memberType', value)}
+          options={memberTypeOptions}
+        />
+        <FormSelect
+          label="Package Type"
+          value={form.packageType}
+          onChange={(value) => handleFieldChange('packageType', value)}
+          options={packageTypeOptions}
+        />
+        <FormSelect
+          label="To Blister?"
+          value={form.toBlister}
+          onChange={(value) => handleFieldChange('toBlister', value)}
+          options={yesNoOptions}
+        />
+        <FormField
+          label="Original Price"
+          value={form.originalPrice}
+          onChange={() => undefined}
+          disabled
+        />
+        <FormField
+          label="Quantity"
+          type="number"
+          value={form.quantity}
+          onChange={(value) => handleFieldChange('quantity', value)}
+          min={0}
+        />
+        <FormField
+          label="Blister Count"
+          type="number"
+          value={form.blisterCount}
+          onChange={(value) => handleFieldChange('blisterCount', value)}
+          min={0}
+        />
+        <FormSelect
+          label="Discount"
+          value={form.discount}
+          onChange={(value) => handleFieldChange('discount', value)}
+          options={discountOptions}
+        />
+        <FormField
+          label="Price After Discount"
+          value={priceAfterDiscount.toFixed(2)}
+          onChange={() => undefined}
+          disabled
+        />
+        <FormField
+          label="One-Time Discount"
+          type="number"
+          value={form.oneTimeDiscount}
+          onChange={(value) => handleFieldChange('oneTimeDiscount', value)}
+          min={0}
+          step="0.01"
+        />
+        <div className="md:col-span-2 xl:col-span-2">
+          <div className="erp-surface-soft p-4 h-full">
+            <p className="text-sm mb-1 erp-title-primary">Total Sales</p>
+            <p className="font-semibold erp-title-primary" style={{ fontSize: 30, lineHeight: '36px' }}>
+              {currencyFormatter.format(totalSales)}
+            </p>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-3 pt-6 mt-8" style={{ borderTop: '1px solid #E5E7EB' }}>
-          <button type="button" className="erp-btn-primary" onClick={saveEntry}>
-            Save Entry
-          </button>
-          <button type="button" className="erp-btn-danger" onClick={clearForm}>
-            Clear Form
-          </button>
+        <FormSelect
+          label="Mode of Payment"
+          value={form.modeOfPayment}
+          onChange={(value) => handleFieldChange('modeOfPayment', value)}
+          options={paymentModeOptions}
+        />
+        <FormSelect
+          label="Payment Mode Type"
+          value={form.paymentModeType}
+          onChange={(value) => handleFieldChange('paymentModeType', value)}
+          options={paymentTypeOptions}
+        />
+        <FormField
+          label="Reference Number"
+          value={form.referenceNumber}
+          onChange={(value) => handleFieldChange('referenceNumber', value)}
+        />
+        <FormSelect
+          label="Mode of Payment (2)"
+          value={form.modeOfPayment2}
+          onChange={(value) => handleFieldChange('modeOfPayment2', value)}
+          options={paymentModeOptions}
+        />
+        <FormSelect
+          label="Payment Mode Type (2)"
+          value={form.paymentModeType2}
+          onChange={(value) => handleFieldChange('paymentModeType2', value)}
+          options={paymentTypeOptions}
+        />
+        <FormField
+          label="Reference Number (2)"
+          value={form.referenceNumber2}
+          onChange={(value) => handleFieldChange('referenceNumber2', value)}
+        />
+        <FormField
+          label="Amount (2)"
+          type="number"
+          value={form.amount2}
+          onChange={(value) => handleFieldChange('amount2', value)}
+          min={0}
+          step="0.01"
+        />
+        <FormField
+          label="Released (Bottle)"
+          type="number"
+          value={form.releasedBottle}
+          onChange={(value) => handleFieldChange('releasedBottle', value)}
+          min={0}
+        />
+        <FormField
+          label="Released (Blister)"
+          type="number"
+          value={form.releasedBlister}
+          onChange={(value) => handleFieldChange('releasedBlister', value)}
+          min={0}
+        />
+        <FormField
+          label="To Follow (Bottle)"
+          type="number"
+          value={form.toFollowBottle}
+          onChange={(value) => handleFieldChange('toFollowBottle', value)}
+          min={0}
+        />
+        <FormField
+          label="To Follow (Blister)"
+          type="number"
+          value={form.toFollowBlister}
+          onChange={(value) => handleFieldChange('toFollowBlister', value)}
+          min={0}
+        />
+        <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <label className="block">
+            <span className="erp-input-label">Remarks</span>
+            <textarea
+              className="erp-textarea"
+              value={form.remarks}
+              onChange={(event) => handleFieldChange('remarks', event.target.value)}
+            />
+          </label>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mt-6">
+        <button type="button" className="erp-btn-primary" onClick={saveEntry}>
+          Save Entry
+        </button>
+        <button type="button" className="erp-btn-danger" onClick={clearForm}>
+          Clear Form
+        </button>
       </div>
     </div>
   );
