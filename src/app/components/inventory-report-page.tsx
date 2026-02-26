@@ -123,6 +123,12 @@ export function InventoryReportPage() {
     month: 'long',
     day: 'numeric'
   });
+  const handlePrint = () => {
+    if (loading) {
+      return;
+    }
+    window.print();
+  };
 
   return (
     <div>
@@ -138,14 +144,14 @@ export function InventoryReportPage() {
               className="h-11 px-3 border border-gray-300 rounded-md"
             />
           </div>
-          <button type="button" className="erp-btn-primary" onClick={() => window.print()}>
+          <button type="button" className="erp-btn-primary" onClick={handlePrint} disabled={loading}>
             <Printer className="w-4 h-4 mr-2" />
             Print
           </button>
         </div>
       </div>
 
-      <div className="erp-card p-8">
+      <div id="inventory-report-print" className="erp-card bg-white p-8">
         <div className="text-center pb-4 mb-6" style={{ borderBottom: '2px solid #2E3A8C' }}>
           <h2 className="text-2xl font-semibold erp-title-primary">Company Name</h2>
           <p className="text-xl mt-1" style={{ color: '#374151' }}>

@@ -14,15 +14,21 @@
   }
 
   body * {
-    display: none !important;
+    visibility: hidden !important;
   }
 
   #print-root,
-  #print-root * {
-    display: block !important;
+  #print-root *,
+  #inventory-report-print,
+  #inventory-report-print * {
+    visibility: visible !important;
   }
 
-  #print-root {
+  #print-root,
+  #inventory-report-print {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
@@ -134,6 +140,17 @@
     padding: 3px 4px;
     font-size: 10.5px;
     line-height: 1.2;
+  }
+
+  #inventory-report-print table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #inventory-report-print th,
+  #inventory-report-print td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .no-print {
