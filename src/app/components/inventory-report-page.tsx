@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Printer } from 'lucide-react';
-import {
-  fetchInventoryReport,
-  type InventoryReportRecord
-} from '../../services/inventoryReport.service';
+import { supabase } from '../../lib/supabaseClient';
+import { type InventoryReportRecord } from '../../services/inventoryReport.service';
 
 type InventoryRow = {
   name: string;
@@ -74,9 +72,7 @@ export function InventoryReportPage() {
   const [rows, setRows] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateFrom] = useState('');
-  const [dateTo] = useState('');
-  const [search] = useState('');
+  const [reportDate, setReportDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     let isMounted = true;
@@ -85,15 +81,20 @@ export function InventoryReportPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchInventoryReport({
-          dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
-          search: search || undefined
-        });
+        const { data, error: queryError } = await supabase
+          .from('v_inventory_report')
+          .select('*')
+          .eq('sale_date', reportDate)
+          .order('created_at', { ascending: true });
+
+        if (queryError) {
+          throw new Error(queryError.message || 'Failed to fetch inventory report.');
+        }
+
         if (!isMounted) {
           return;
         }
-        setRows(data.map(mapInventoryRecordToRow));
+        setRows(((data ?? []) as InventoryReportRecord[]).map(mapInventoryRecordToRow));
       } catch (fetchError) {
         if (!isMounted) {
           return;
@@ -114,10 +115,10 @@ export function InventoryReportPage() {
     return () => {
       isMounted = false;
     };
-  }, [dateFrom, dateTo, search]);
+  }, [reportDate]);
 
   const totalAmount = useMemo(() => rows.reduce((sum, row) => sum + row.amount, 0), [rows]);
-  const reportDate = new Date().toLocaleDateString('en-PH', {
+  const reportDateDisplay = new Date(reportDate).toLocaleDateString('en-PH', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -127,14 +128,21 @@ export function InventoryReportPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold erp-title-primary">Inventory Report</h1>
-        <button
-          type="button"
-          className="erp-btn-primary print:hidden erp-print-hidden"
-          onClick={() => window.print()}
-        >
-          <Printer className="w-4 h-4 mr-2" />
-          Print
-        </button>
+        <div className="flex items-end gap-3 print:hidden erp-print-hidden">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-600">Report Date</label>
+            <input
+              type="date"
+              value={reportDate}
+              onChange={(event) => setReportDate(event.target.value)}
+              className="h-11 px-3 border border-gray-300 rounded-md"
+            />
+          </div>
+          <button type="button" className="erp-btn-primary" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2" />
+            Print
+          </button>
+        </div>
       </div>
 
       <div className="erp-card p-8">
@@ -144,7 +152,7 @@ export function InventoryReportPage() {
             Inventory Report
           </p>
           <p className="text-sm mt-2" style={{ color: '#374151' }}>
-            Report Date: {reportDate}
+            Report Date: {reportDateDisplay}
           </p>
         </div>
 
@@ -207,7 +215,7 @@ export function InventoryReportPage() {
               {!loading && !error && rows.length === 0 ? (
                 <tr>
                   <td colSpan={17} className="text-center">
-                    No records found.
+                    No records for this date.
                   </td>
                 </tr>
               ) : null}
