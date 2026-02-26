@@ -31,6 +31,8 @@ type EncoderFormState = {
   toFollowBottle: string;
   toFollowBlister: string;
   remarks: string;
+  received_by: string;
+  collected_by: string;
 };
 
 const DEFAULT_LOCATION = 'Davao Office';
@@ -61,7 +63,9 @@ const initialState: EncoderFormState = {
   releasedBlister: '',
   toFollowBottle: '',
   toFollowBlister: '',
-  remarks: ''
+  remarks: '',
+  received_by: '',
+  collected_by: ''
 };
 
 const memberTypeOptions = [
@@ -558,10 +562,18 @@ export function EncoderPage() {
           </div>
 
           <div className="md:col-span-2 lg:col-span-2">
-            <FormField label="Received By" value="" onChange={() => undefined} disabled />
+            <FormField
+              label="Received By"
+              value={form.received_by}
+              onChange={(value) => handleFieldChange('received_by', value)}
+            />
           </div>
           <div className="md:col-span-2 lg:col-span-2">
-            <FormField label="Collected By" value="" onChange={() => undefined} disabled />
+            <FormField
+              label="Collected By"
+              value={form.collected_by}
+              onChange={(value) => handleFieldChange('collected_by', value)}
+            />
           </div>
         </div>
 
