@@ -22,6 +22,7 @@ type EncoderFormState = {
   modeOfPayment: string;
   paymentModeType: string;
   referenceNumber: string;
+  amount_1: string;
   modeOfPayment2: string;
   paymentModeType2: string;
   referenceNumber2: string;
@@ -55,6 +56,7 @@ const initialState: EncoderFormState = {
   modeOfPayment: '',
   paymentModeType: '',
   referenceNumber: '',
+  amount_1: '',
   modeOfPayment2: '',
   paymentModeType2: '',
   referenceNumber2: '',
@@ -271,7 +273,7 @@ export function EncoderPage() {
 
     const warnings: string[] = [];
 
-    const firstPaymentAmount = totalSales;
+    const firstPaymentAmount = parseNumber(form.amount_1);
     const secondPaymentAmount = parseNumber(form.amount2);
     const paymentRows: Array<{
       sale_entry_id: string;
@@ -507,11 +509,21 @@ export function EncoderPage() {
               options={paymentTypeOptions}
             />
           </div>
-          <div className="lg:col-span-2 encoder-col-2">
+          <div className="lg:col-span-1">
             <FormField
               label="Reference Number"
               value={form.referenceNumber}
               onChange={(value) => handleFieldChange('referenceNumber', value)}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <FormField
+              label="Amount"
+              type="number"
+              value={form.amount_1}
+              onChange={(value) => handleFieldChange('amount_1', value)}
+              min={0}
+              step="0.01"
             />
           </div>
 
