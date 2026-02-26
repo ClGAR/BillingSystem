@@ -75,9 +75,11 @@ const memberTypeOptions = [
 
 const packageTypeOptions = [
   { label: 'Select package', value: '' },
-  { label: 'Platinum Package', value: 'platinum-package' },
-  { label: 'Gold Package', value: 'gold-package' },
-  { label: 'Silver Package', value: 'silver-package' }
+  { label: 'Silver (1 bottle)', value: 'Silver (1 bottle)' },
+  { label: 'Gold (3 bottles)', value: 'Gold (3 bottles)' },
+  { label: 'Platinum (10 bottles)', value: 'Platinum (10 bottles)' },
+  { label: 'Retail (1 bottle)', value: 'Retail (1 bottle)' },
+  { label: 'Blister (1 blister pack)', value: 'Blister (1 blister pack)' }
 ];
 
 const yesNoOptions = [
