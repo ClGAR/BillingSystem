@@ -49,7 +49,7 @@ const initialState: EncoderFormState = {
   toBlister: '',
   quantity: '',
   blisterCount: '',
-  originalPrice: '0.00',
+  originalPrice: '0',
   discount: '0',
   oneTimeDiscount: '',
   modeOfPayment: '',
@@ -85,6 +85,14 @@ const packageTypeOptions = [
   { label: 'Retail (1 bottle)', value: 'Retail (1 bottle)' },
   { label: 'Blister (1 blister pack)', value: 'Blister (1 blister pack)' }
 ];
+
+const PACKAGE_PRICE_MAP: Record<string, number> = {
+  'Silver (1 bottle)': 3500,
+  'Gold (3 bottles)': 10500,
+  'Platinum (10 bottles)': 35000,
+  'Retail (1 bottle)': 2280,
+  'Blister (1 blister pack)': 779
+};
 
 const yesNoOptions = [
   { label: 'Select option', value: '' },
@@ -126,6 +134,13 @@ function parseNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function computeOriginalPrice(packageType: string, quantity: string, blisterCount: string): number {
+  const unitPrice = PACKAGE_PRICE_MAP[packageType] || 0;
+  const count =
+    packageType === 'Blister (1 blister pack)' ? parseNumber(blisterCount) : parseNumber(quantity);
+  return Math.max(0, unitPrice * count);
+}
+
 function isMissingColumnError(error: { message?: string; code?: string } | null, column: string): boolean {
   if (!error) {
     return false;
@@ -143,26 +158,39 @@ export function EncoderPage() {
   const [form, setForm] = useState<EncoderFormState>(initialState);
 
   const handleFieldChange = (field: keyof EncoderFormState, value: string | boolean) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value
-    }));
+    setForm((previous) => {
+      const nextForm = {
+        ...previous,
+        [field]: value
+      } as EncoderFormState;
+
+      if (field === 'packageType' || field === 'quantity' || field === 'blisterCount') {
+        const nextOriginalPrice = computeOriginalPrice(
+          nextForm.packageType,
+          nextForm.quantity,
+          nextForm.blisterCount
+        );
+        nextForm.originalPrice = nextOriginalPrice.toFixed(2);
+      }
+
+      return nextForm;
+    });
   };
 
   const { priceAfterDiscount, totalSales } = useMemo(() => {
     const originalPrice = parseNumber(form.originalPrice);
-    const quantity = parseNumber(form.quantity);
     const discountRate = parseNumber(form.discount) / 100;
     const oneTimeDiscount = parseNumber(form.oneTimeDiscount);
 
-    const computedPriceAfterDiscount = Math.max(0, originalPrice * (1 - discountRate));
-    const computedTotalSales = Math.max(0, quantity * computedPriceAfterDiscount - oneTimeDiscount);
+    const discountedPrice = Math.max(0, originalPrice * (1 - discountRate));
+    const computedPriceAfterDiscount = Math.max(0, discountedPrice - oneTimeDiscount);
+    const computedTotalSales = computedPriceAfterDiscount;
 
     return {
       priceAfterDiscount: computedPriceAfterDiscount,
       totalSales: computedTotalSales
     };
-  }, [form.discount, form.oneTimeDiscount, form.originalPrice, form.quantity]);
+  }, [form.discount, form.oneTimeDiscount, form.originalPrice]);
 
   const saveEntry = async () => {
     const { data: authData, error: authError } = await supabase.auth.getUser();
