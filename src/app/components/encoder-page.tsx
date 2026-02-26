@@ -325,83 +325,84 @@ export function EncoderPage() {
     <div className="w-full bg-white rounded-lg shadow-sm p-6">
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
-          <div className="lg:col-span-1">
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+            <div className="col-span-1 lg:col-span-1">
             <FormField label="Location" value={form.location} onChange={() => undefined} disabled />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Date"
               type="date"
               value={form.date}
               onChange={(value) => handleFieldChange('date', value)}
             />
-          </div>
-          <div className="lg:col-span-2">
+            </div>
+            <div className="col-span-1 lg:col-span-2">
             <FormField
               label="POF/PO Number"
               value={form.poNumber}
               onChange={(value) => handleFieldChange('poNumber', value)}
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-2">
+            <div className="col-span-1 lg:col-span-2">
             <FormField
               label="Member Name"
               value={form.memberName}
               onChange={(value) => handleFieldChange('memberName', value)}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Username"
               value={form.username}
               onChange={(value) => handleFieldChange('username', value)}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormToggle
               label="New Member?"
               checked={form.newMember}
               onChange={(value) => handleFieldChange('newMember', value)}
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Member Type"
               value={form.memberType}
               onChange={(value) => handleFieldChange('memberType', value)}
               options={memberTypeOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Package Type"
               value={form.packageType}
               onChange={(value) => handleFieldChange('packageType', value)}
               options={packageTypeOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="To Blister?"
               value={form.toBlister}
               onChange={(value) => handleFieldChange('toBlister', value)}
               options={yesNoOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Original Price"
               value={form.originalPrice}
               onChange={() => undefined}
               disabled
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Quantity"
               type="number"
@@ -409,8 +410,8 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('quantity', value)}
               min={0}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Blister Count"
               type="number"
@@ -418,25 +419,25 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('blisterCount', value)}
               min={0}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Discount"
               value={form.discount}
               onChange={(value) => handleFieldChange('discount', value)}
               options={discountOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Price After Discount"
               value={priceAfterDiscount.toFixed(2)}
               onChange={() => undefined}
               disabled
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="One-Time Discount"
               type="number"
@@ -445,64 +446,64 @@ export function EncoderPage() {
               min={0}
               step="0.01"
             />
-          </div>
-          <div className="lg:col-span-3">
+            </div>
+            <div className="col-span-1 lg:col-span-3">
             <FormField
               label="Total Sales"
               value={currencyFormatter.format(totalSales)}
               onChange={() => undefined}
               disabled
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Mode of Payment"
               value={form.modeOfPayment}
               onChange={(value) => handleFieldChange('modeOfPayment', value)}
               options={paymentModeOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Payment Mode Type"
               value={form.paymentModeType}
               onChange={(value) => handleFieldChange('paymentModeType', value)}
               options={paymentTypeOptions}
             />
-          </div>
-          <div className="lg:col-span-2">
+            </div>
+            <div className="col-span-1 lg:col-span-2">
             <FormField
               label="Reference Number"
               value={form.referenceNumber}
               onChange={(value) => handleFieldChange('referenceNumber', value)}
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Mode of Payment (2)"
               value={form.modeOfPayment2}
               onChange={(value) => handleFieldChange('modeOfPayment2', value)}
               options={paymentModeOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormSelect
               label="Payment Mode Type (2)"
               value={form.paymentModeType2}
               onChange={(value) => handleFieldChange('paymentModeType2', value)}
               options={paymentTypeOptions}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Reference Number (2)"
               value={form.referenceNumber2}
               onChange={(value) => handleFieldChange('referenceNumber2', value)}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Amount (2)"
               type="number"
@@ -511,9 +512,9 @@ export function EncoderPage() {
               min={0}
               step="0.01"
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-1">
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Released (Bottle)"
               type="number"
@@ -521,8 +522,8 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('releasedBottle', value)}
               min={0}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="Released (Blister)"
               type="number"
@@ -530,8 +531,8 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('releasedBlister', value)}
               min={0}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="To Follow (Bottle)"
               type="number"
@@ -539,8 +540,8 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('toFollowBottle', value)}
               min={0}
             />
-          </div>
-          <div className="lg:col-span-1">
+            </div>
+            <div className="col-span-1 lg:col-span-1">
             <FormField
               label="To Follow (Blister)"
               type="number"
@@ -548,9 +549,9 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('toFollowBlister', value)}
               min={0}
             />
-          </div>
+            </div>
 
-          <div className="lg:col-span-4">
+            <div className="col-span-1 lg:col-span-4">
             <label className="block">
               <span className="erp-input-label">Remarks</span>
               <textarea
@@ -559,31 +560,32 @@ export function EncoderPage() {
                 onChange={(event) => handleFieldChange('remarks', event.target.value)}
               />
             </label>
-          </div>
+            </div>
 
-          <div className="lg:col-span-2">
+            <div className="col-span-1 lg:col-span-2">
             <FormField
               label="Received By"
               value={form.received_by}
               onChange={(value) => handleFieldChange('received_by', value)}
             />
-          </div>
-          <div className="lg:col-span-2">
+            </div>
+            <div className="col-span-1 lg:col-span-2">
             <FormField
               label="Collected By"
               value={form.collected_by}
               onChange={(value) => handleFieldChange('collected_by', value)}
             />
+            </div>
           </div>
-        </div>
 
-        <div className="flex gap-3 mt-6">
-          <button type="button" className="erp-btn-primary" onClick={saveEntry}>
-            Save Entry
-          </button>
-          <button type="button" className="erp-btn-danger" onClick={clearForm}>
-            Clear Form
-          </button>
+          <div className="flex gap-3 mt-6">
+            <button type="button" className="erp-btn-primary" onClick={saveEntry}>
+              Save Entry
+            </button>
+            <button type="button" className="erp-btn-danger" onClick={clearForm}>
+              Clear Form
+            </button>
+          </div>
         </div>
       </div>
     </div>
