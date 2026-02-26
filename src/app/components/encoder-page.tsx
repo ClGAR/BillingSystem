@@ -326,7 +326,7 @@ export function EncoderPage() {
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
       <div className="w-full max-w-[1280px]">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 items-end">
           <div>
             <FormField label="Location" value={form.location} onChange={() => undefined} disabled />
           </div>
@@ -455,6 +455,9 @@ export function EncoderPage() {
             />
           </div>
 
+          <div className="md:col-span-2 lg:col-span-4 pt-2" />
+          <div className="md:col-span-2 lg:col-span-4 border-t border-gray-200 my-2" />
+
           <div>
             <FormSelect
               label="Mode of Payment"
@@ -550,25 +553,25 @@ export function EncoderPage() {
             />
           </div>
 
-          <div className="md:col-span-2 lg:col-span-4">
+          <div className="md:col-span-2 lg:col-span-4 mt-2">
             <label className="block">
               <span className="erp-input-label">Remarks</span>
               <textarea
-                className="erp-textarea min-h-[90px]"
+                className="erp-textarea min-h-[110px]"
                 value={form.remarks}
                 onChange={(event) => handleFieldChange('remarks', event.target.value)}
               />
             </label>
           </div>
 
-          <div className="md:col-span-2 lg:col-span-2">
+          <div className="md:col-span-2 lg:col-span-2 mt-2">
             <FormField
               label="Received By"
               value={form.received_by}
               onChange={(value) => handleFieldChange('received_by', value)}
             />
           </div>
-          <div className="md:col-span-2 lg:col-span-2">
+          <div className="md:col-span-2 lg:col-span-2 mt-2">
             <FormField
               label="Collected By"
               value={form.collected_by}
