@@ -318,7 +318,7 @@ export function EncoderPage() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="w-full bg-white rounded-lg shadow-sm p-6">
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">

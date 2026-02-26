@@ -48,7 +48,7 @@ export function SalesDashboardEncoderApp({ initialPage = 'dashboard' }: SalesDas
 
   return (
     <div className="erp-root pt-16">
-      <div className="erp-main">
+      <div className="erp-main mx-auto w-full max-w-[1600px] px-6 py-6">
         <Navigation />
         <ModuleTabs activePage={activePage} setActivePage={setActivePage} />
         <div className="mt-6">{renderPageContent()}</div>
