@@ -71,10 +71,11 @@ const eventOptions = [
 
 const memberTypeOptions = [
   { label: 'Select type', value: '' },
-  { label: 'Mobile Stockist', value: 'mobile-stockist' },
-  { label: 'Platinum', value: 'platinum' },
-  { label: 'Gold', value: 'gold' },
-  { label: 'Silver', value: 'silver' }
+  { label: 'Distributor', value: 'Distributor' },
+  { label: 'Mobile Stockist', value: 'Mobile Stockist' },
+  { label: 'City Stockist', value: 'City Stockist' },
+  { label: 'Center', value: 'Center' },
+  { label: 'Non-member', value: 'Non-member' }
 ];
 
 const packageTypeOptions = [
