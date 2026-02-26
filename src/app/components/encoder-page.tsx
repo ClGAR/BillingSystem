@@ -326,7 +326,7 @@ export function EncoderPage() {
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">New Sale Entry</h1>
 
       <div className="mx-auto w-full max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+        <div className="encoder-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
           <div className="lg:col-span-1">
             <FormField label="Location" value={form.location} onChange={() => undefined} disabled />
           </div>
@@ -338,7 +338,7 @@ export function EncoderPage() {
               onChange={(value) => handleFieldChange('date', value)}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 encoder-col-2">
             <FormField
               label="POF/PO Number"
               value={form.poNumber}
@@ -346,7 +346,7 @@ export function EncoderPage() {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 encoder-col-2">
             <FormField
               label="Member Name"
               value={form.memberName}
@@ -446,7 +446,7 @@ export function EncoderPage() {
               step="0.01"
             />
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 encoder-col-3">
             <FormField
               label="Total Sales"
               value={currencyFormatter.format(totalSales)}
@@ -471,7 +471,7 @@ export function EncoderPage() {
               options={paymentTypeOptions}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 encoder-col-2">
             <FormField
               label="Reference Number"
               value={form.referenceNumber}
@@ -550,7 +550,7 @@ export function EncoderPage() {
             />
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 encoder-col-4">
             <label className="block">
               <span className="erp-input-label">Remarks</span>
               <textarea
@@ -561,14 +561,14 @@ export function EncoderPage() {
             </label>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 encoder-col-2">
             <FormField
               label="Received By"
               value={form.received_by}
               onChange={(value) => handleFieldChange('received_by', value)}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 encoder-col-2">
             <FormField
               label="Collected By"
               value={form.collected_by}

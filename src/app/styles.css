@@ -209,6 +209,13 @@
   gap: 48px;
 }
 
+.encoder-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  row-gap: 1.25rem;
+}
+
 @media (min-width: 1024px) {
   .erp-grid-main {
     grid-template-columns: 1fr 1fr;
@@ -224,6 +231,28 @@
 
   .erp-sign-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .encoder-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .encoder-col-2 {
+    grid-column: span 2 / span 2;
+  }
+
+  .encoder-col-3 {
+    grid-column: span 3 / span 3;
+  }
+
+  .encoder-col-4 {
+    grid-column: span 4 / span 4;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .encoder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
