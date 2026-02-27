@@ -29,6 +29,7 @@ type SalesEntry = {
 type SalesEntryPaymentRow = {
   mode: string | null;
   mode_type: string | null;
+  reference_no?: string | null;
   amount: number | string | null;
   sale_entry_id: string | number | null;
   [key: string]: unknown;
@@ -275,6 +276,16 @@ function mapPaymentLabel(row: SalesEntryPaymentRow): (typeof PAYMENT_METHODS)[nu
   return 'Cash on hand';
 }
 
+function getPaymentReference(row: SalesEntryPaymentRow): string {
+  const reference = String(
+    row.reference_no ??
+      row.reference ??
+      row.ref_no ??
+      ''
+  ).trim();
+  return reference || '-';
+}
+
 function Box({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-gray-700">
@@ -464,7 +475,7 @@ export function SalesReportPage() {
       if (saleEntryIds.length > 0) {
         const { data: paymentData, error: paymentError } = await supabase
           .from('sales_entry_payments')
-          .select('mode, mode_type, amount, sale_entry_id')
+          .select('mode, mode_type, reference_no, amount, sale_entry_id')
           .in('sale_entry_id', saleEntryIds);
 
         if (paymentError) {
@@ -692,19 +703,51 @@ export function SalesReportPage() {
   );
 
   const bankRows = useMemo<ReferenceRow[]>(
-    () => {
-      const amount = fixedPaymentMap.get('Bank Transfer - Security Bank') ?? 0;
-      return amount > 0 ? [{ label: 'Security Bank', reference: '-', amount }] : [];
-    },
-    [fixedPaymentMap]
+    () =>
+      paymentRows
+        .filter((payment) => {
+          const mode = norm(payment.mode);
+          const modeType = norm(payment.mode_type);
+          const reference = norm(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
+          const isBankMode = mode.includes('bank') || mode.includes('bank transfer');
+          return isBankMode && (
+            modeType.includes('security') ||
+            modeType.includes('sec') ||
+            reference.includes('sec') ||
+            modeType === ''
+          );
+        })
+        .map((payment) => {
+          const modeType = normalize(payment.mode_type);
+          return {
+            label: modeType || 'Bank',
+            reference: getPaymentReference(payment),
+            amount: toNumber(payment.amount)
+          };
+        }),
+    [paymentRows]
   );
 
   const mayaIgiRows = useMemo<ReferenceRow[]>(
-    () => {
-      const amount = fixedPaymentMap.get('Maya (IGI)') ?? 0;
-      return amount > 0 ? [{ label: 'Maya', reference: '-', amount }] : [];
-    },
-    [fixedPaymentMap]
+    () =>
+      paymentRows
+        .filter((payment) => {
+          const mode = norm(payment.mode);
+          const modeType = norm(payment.mode_type);
+          const reference = norm(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
+          return mode.includes('maya') && (
+            modeType.includes('igi') ||
+            mode.includes('(igi)') ||
+            mode.includes('igi') ||
+            reference.length > 0
+          );
+        })
+        .map((payment) => ({
+          label: 'Maya (IGI)',
+          reference: getPaymentReference(payment),
+          amount: toNumber(payment.amount)
+        })),
+    [paymentRows]
   );
 
   const sbCollectIgiRows = useMemo<ReferenceRow[]>(
