@@ -418,8 +418,8 @@ export function SalesReportPage() {
     void loadReport(buildDailyParams());
   }, [reportDate]);
 
-  const handleGenerateReport = () => {
-    void loadReport(buildDailyParams(searchText));
+  const handleGenerateReport = async () => {
+    await loadReport(buildDailyParams(searchText));
   };
 
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
@@ -710,7 +710,7 @@ export function SalesReportPage() {
             />
           </div>
 
-          <div className="w-full lg:w-auto lg:ml-auto flex gap-3">
+          <div className="w-full lg:w-auto lg:ml-auto flex gap-2">
             <button
               type="button"
               onClick={handleGenerateReport}
@@ -722,7 +722,7 @@ export function SalesReportPage() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-11 px-5 w-full lg:w-auto border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 print:hidden"
+              className="h-11 px-4 w-full lg:w-auto border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 print:hidden"
               title="Print"
             >
               <Printer className="w-4 h-4" />
