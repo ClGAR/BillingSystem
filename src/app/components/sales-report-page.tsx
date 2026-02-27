@@ -404,7 +404,7 @@ export function SalesReportPage() {
       const [entriesResult, paymentBreakdown, cashCount] = await Promise.all([
         supabase
           .from('sales_entries')
-          .select('id, sale_date, created_at, member_name, package_type, total_sales')
+          .select('id,sale_date,created_at,member_name,package_type,total_sales')
           .eq('sale_date', selectedReportDate)
           .order('created_at', { ascending: true }),
         fetchPaymentBreakdown({
@@ -422,7 +422,7 @@ export function SalesReportPage() {
 
       const entries = (entriesResult.data ?? []) as SalesEntry[];
       console.log('reportDate', selectedReportDate);
-      console.log('rows returned', entries.length);
+      console.log('entries', entries);
 
       setEntriesRows(entries);
       setPaymentRows(paymentBreakdown.rows);
@@ -443,7 +443,11 @@ export function SalesReportPage() {
   }, [reportDate]);
 
   const handleGenerateReport = async () => {
-    await loadReport(buildDailyParams(searchText));
+    await loadReport({
+      dateFrom: reportDate,
+      dateTo: reportDate,
+      search: searchText || undefined
+    });
   };
 
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
