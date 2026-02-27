@@ -20,6 +20,7 @@ type SalesEntry = {
   sale_date: string | null;
   created_at: string | null;
   member_name: string | null;
+  po_number?: string | null;
   package_type: string | null;
   quantity: number | string | null;
   total_sales: number | string | null;
@@ -147,6 +148,7 @@ function formatDenomination(value: number): string {
 
 const normalize = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 const norm = (v: unknown) => normalize(v).toLowerCase();
+const has = (s: string, needle: string) => s.includes(needle);
 const pkg = (entry: SalesEntry) => normalize(entry.package_type) || 'Unknown';
 
 function getEntryQty(entry: SalesEntry): number {
@@ -458,7 +460,7 @@ export function SalesReportPage() {
       console.log('[SalesReport] reportDate', selectedReportDate);
       const { data: entries, error: entriesError } = await supabase
         .from('sales_entries')
-        .select('id, sale_date, created_at, member_name, package_type, quantity, total_sales')
+        .select('id, sale_date, created_at, member_name, po_number, package_type, quantity, total_sales')
         .eq('sale_date', selectedReportDate)
         .order('created_at', { ascending: true });
 
@@ -702,6 +704,17 @@ export function SalesReportPage() {
     [cashRows]
   );
 
+  const entryById = useMemo(() => {
+    const map = new Map<string, SalesEntry>();
+    entriesRows.forEach((entry) => {
+      if (entry.id === null || entry.id === undefined) {
+        return;
+      }
+      map.set(String(entry.id), entry);
+    });
+    return map;
+  }, [entriesRows]);
+
   const bankRows = useMemo<ReferenceRow[]>(
     () =>
       paymentRows
@@ -709,11 +722,11 @@ export function SalesReportPage() {
           const mode = norm(payment.mode);
           const modeType = norm(payment.mode_type);
           const reference = norm(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
-          const isBankMode = mode.includes('bank') || mode.includes('bank transfer');
+          const isBankMode = has(mode, 'bank') || has(mode, 'bank transfer');
           return isBankMode && (
-            modeType.includes('security') ||
-            modeType.includes('sec') ||
-            reference.includes('sec') ||
+            has(modeType, 'security') ||
+            has(modeType, 'sec') ||
+            has(reference, 'sec') ||
             modeType === ''
           );
         })
@@ -735,10 +748,10 @@ export function SalesReportPage() {
           const mode = norm(payment.mode);
           const modeType = norm(payment.mode_type);
           const reference = norm(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
-          return mode.includes('maya') && (
-            modeType.includes('igi') ||
-            mode.includes('(igi)') ||
-            mode.includes('igi') ||
+          return has(mode, 'maya') && (
+            has(modeType, 'igi') ||
+            has(mode, '(igi)') ||
+            has(mode, 'igi') ||
             reference.length > 0
           );
         })
@@ -751,27 +764,63 @@ export function SalesReportPage() {
   );
 
   const sbCollectIgiRows = useMemo<ReferenceRow[]>(
-    () => {
-      const amount = fixedPaymentMap.get('SB Collect (IGI)') ?? 0;
-      return amount > 0 ? [{ label: 'SB Collect (IGI)', reference: '-', amount }] : [];
-    },
-    [fixedPaymentMap]
+    () =>
+      paymentRows
+        .filter((payment) => {
+          const mode = norm(payment.mode);
+          const modeType = norm(payment.mode_type);
+          const isSbCollect = (has(mode, 'sb') && has(mode, 'collect')) || has(mode, 'sbcollect');
+          return isSbCollect && (has(modeType, 'igi') || has(mode, '(igi)') || has(mode, 'igi'));
+        })
+        .map((payment) => {
+          const reference = normalize(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
+          return {
+            label: reference,
+            reference,
+            amount: toNumber(payment.amount)
+          };
+        }),
+    [paymentRows]
   );
 
   const sbCollectAtcRows = useMemo<ReferenceRow[]>(
-    () => {
-      const amount = fixedPaymentMap.get('SB Collect (ATC)') ?? 0;
-      return amount > 0 ? [{ label: 'SB Collect (ATC)', reference: '-', amount }] : [];
-    },
-    [fixedPaymentMap]
+    () =>
+      paymentRows
+        .filter((payment) => {
+          const mode = norm(payment.mode);
+          const modeType = norm(payment.mode_type);
+          const isSbCollect = (has(mode, 'sb') && has(mode, 'collect')) || has(mode, 'sbcollect');
+          return isSbCollect && (has(modeType, 'atc') || has(mode, '(atc)') || has(mode, 'atc'));
+        })
+        .map((payment) => {
+          const reference = normalize(payment.reference_no ?? payment.reference ?? payment.ref_no ?? '');
+          return {
+            label: reference,
+            reference,
+            amount: toNumber(payment.amount)
+          };
+        }),
+    [paymentRows]
   );
 
   const arCsaRows = useMemo<ReferenceRow[]>(
-    () => {
-      const amount = fixedPaymentMap.get('Accounts Receivable - CSA') ?? 0;
-      return amount > 0 ? [{ label: '-', reference: '-', amount }] : [];
-    },
-    [fixedPaymentMap]
+    () =>
+      paymentRows
+        .filter((payment) => {
+          const mode = norm(payment.mode);
+          const modeType = norm(payment.mode_type);
+          return (has(mode, 'ar') || has(mode, 'accounts receivable')) &&
+            (has(modeType, 'csa') || has(mode, '(csa)') || has(mode, 'csa'));
+        })
+        .map((payment) => {
+          const entry = entryById.get(String(payment.sale_entry_id ?? ''));
+          return {
+            label: normalize(entry?.member_name ?? ''),
+            reference: normalize(entry?.po_number ?? ''),
+            amount: toNumber(payment.amount)
+          };
+        }),
+    [paymentRows, entryById]
   );
 
   const newAccounts = { silver: 0, gold: 0, platinum: 0 };
