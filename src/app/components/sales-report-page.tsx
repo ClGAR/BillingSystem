@@ -16,10 +16,21 @@ type SummaryRow = {
   amount: number;
 };
 
+type ReferenceRow = {
+  label: string;
+  reference: string;
+  amount: number;
+};
+
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP'
 });
+
+const compactTableClassName = 'w-full border-collapse table-fixed';
+const tableHeaderClassName = 'border border-gray-700 bg-gray-100 px-1 py-[2px] text-left font-semibold';
+const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
+const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -43,6 +54,176 @@ function formatDateLabel(value: string): string {
     day: 'numeric',
     year: 'numeric'
   });
+}
+
+function modeIncludes(mode: string, tokens: string[]): boolean {
+  const normalizedMode = mode.toLowerCase();
+  return tokens.every((token) => normalizedMode.includes(token.toLowerCase()));
+}
+
+function Box({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-gray-700">
+      <div className="px-2 py-1 font-semibold uppercase bg-gray-100 border-b border-gray-700">
+        {title}
+      </div>
+      <div className="p-1">{children}</div>
+    </div>
+  );
+}
+
+function SummaryTable({
+  firstHeader,
+  rows,
+  loading,
+  totalLabel
+}: {
+  firstHeader: string;
+  rows: SummaryRow[];
+  loading: boolean;
+  totalLabel: string;
+}) {
+  const totalQty = rows.reduce((sum, row) => sum + row.qty, 0);
+  const totalAmount = rows.reduce((sum, row) => sum + row.amount, 0);
+
+  return (
+    <table className={compactTableClassName}>
+      <colgroup>
+        <col style={{ width: '46%' }} />
+        <col style={{ width: '10%' }} />
+        <col style={{ width: '18%' }} />
+        <col style={{ width: '26%' }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className={tableHeaderClassName}>{firstHeader}</th>
+          <th className={`${tableHeaderClassName} text-right`}>QTY</th>
+          <th className={`${tableHeaderClassName} text-right`}>PRICE</th>
+          <th className={`${tableHeaderClassName} text-right`}>AMOUNT TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          <tr>
+            <td colSpan={4} className={`${tableCellClassName} text-center`}>
+              Loading...
+            </td>
+          </tr>
+        ) : null}
+        {!loading && rows.length === 0 ? (
+          <tr>
+            <td colSpan={4} className={`${tableCellClassName} text-center`}>
+              No records
+            </td>
+          </tr>
+        ) : null}
+        {!loading
+          ? rows.map((row) => (
+              <tr key={row.packageName}>
+                <td className={tableCellClassName}>{row.packageName}</td>
+                <td className={numberCellClassName}>{row.qty}</td>
+                <td className={numberCellClassName}>{currencyFormatter.format(row.price)}</td>
+                <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
+              </tr>
+            ))
+          : null}
+        <tr>
+          <td className={tableCellClassName}>{totalLabel}</td>
+          <td className={numberCellClassName}>{totalQty}</td>
+          <td className={numberCellClassName}>-</td>
+          <td className={numberCellClassName}>{currencyFormatter.format(totalAmount)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+function ReferenceTable({
+  firstHeader,
+  secondHeader,
+  rows,
+  loading
+}: {
+  firstHeader: string;
+  secondHeader: string;
+  rows: ReferenceRow[];
+  loading: boolean;
+}) {
+  return (
+    <table className={compactTableClassName}>
+      <colgroup>
+        <col style={{ width: '26%' }} />
+        <col style={{ width: '54%' }} />
+        <col style={{ width: '20%' }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className={tableHeaderClassName}>{firstHeader}</th>
+          <th className={tableHeaderClassName}>{secondHeader}</th>
+          <th className={`${tableHeaderClassName} text-right`}>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          <tr>
+            <td colSpan={3} className={`${tableCellClassName} text-center`}>
+              Loading...
+            </td>
+          </tr>
+        ) : null}
+        {!loading && rows.length === 0 ? (
+          <tr>
+            <td colSpan={3} className={`${tableCellClassName} text-center`}>
+              No records
+            </td>
+          </tr>
+        ) : null}
+        {!loading
+          ? rows.map((row, index) => (
+              <tr key={`${row.label}-${row.reference}-${index}`}>
+                <td className={tableCellClassName}>{row.label}</td>
+                <td className={tableCellClassName}>{row.reference}</td>
+                <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
+              </tr>
+            ))
+          : null}
+      </tbody>
+    </table>
+  );
+}
+
+function MiniTable({
+  values
+}: {
+  values: {
+    silver: number;
+    gold: number;
+    platinum: number;
+  };
+}) {
+  return (
+    <table className={compactTableClassName}>
+      <colgroup>
+        <col style={{ width: '33%' }} />
+        <col style={{ width: '33%' }} />
+        <col style={{ width: '34%' }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className={`${tableHeaderClassName} text-center`}>Silver</th>
+          <th className={`${tableHeaderClassName} text-center`}>Gold</th>
+          <th className={`${tableHeaderClassName} text-center`}>Platinum</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td className={`${numberCellClassName} text-center`}>{values.silver}</td>
+          <td className={`${numberCellClassName} text-center`}>{values.gold}</td>
+          <td className={`${numberCellClassName} text-center`}>{values.platinum}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
 }
 
 export function SalesReportPage() {
@@ -107,14 +288,6 @@ export function SalesReportPage() {
       .sort((a, b) => b.amount - a.amount);
   }, [entriesRows]);
 
-  const packageTotalQty = useMemo(
-    () => packageSalesRows.reduce((sum, row) => sum + row.qty, 0),
-    [packageSalesRows]
-  );
-  const packageTotalAmount = useMemo(
-    () => packageSalesRows.reduce((sum, row) => sum + row.amount, 0),
-    [packageSalesRows]
-  );
   const grandTotal = useMemo(
     () => entriesRows.reduce((sum, row) => sum + toNumber(row.total_sales), 0),
     [entriesRows]
@@ -133,13 +306,82 @@ export function SalesReportPage() {
     return formatDateLabel(getTodayDateString());
   }, [dateFrom, dateTo]);
 
+  const mobileStockistPackageRows = useMemo(
+    () =>
+      packageSalesRows.filter((row) => row.packageName.toLowerCase().includes('mobile stockist')),
+    [packageSalesRows]
+  );
+
+  const depotPackageRows = useMemo(
+    () => packageSalesRows.filter((row) => row.packageName.toLowerCase().includes('depot')),
+    [packageSalesRows]
+  );
+
   const cashLines = cashCountData?.lines ?? [];
   const totalCashOnHand = cashCountData?.header.total_cash ?? 0;
 
-  const tableClassName = 'w-full text-xs border border-gray-400 border-collapse';
-  const headerCellClassName = 'border border-gray-300 px-2 py-1 text-left font-semibold';
-  const bodyCellClassName = 'border border-gray-300 px-2 py-1';
-  const numericCellClassName = `${bodyCellClassName} text-right`;
+  const bankRows = useMemo<ReferenceRow[]>(
+    () =>
+      paymentRows
+        .filter((row) => modeIncludes(row.mode, ['bank']))
+        .map((row) => ({
+          label: 'Security Bank',
+          reference: '-',
+          amount: row.amount
+        })),
+    [paymentRows]
+  );
+
+  const mayaIgiRows = useMemo<ReferenceRow[]>(
+    () =>
+      paymentRows
+        .filter((row) => modeIncludes(row.mode, ['maya', 'igi']) || row.mode.toLowerCase() === 'maya')
+        .map((row) => ({
+          label: 'Maya',
+          reference: '-',
+          amount: row.amount
+        })),
+    [paymentRows]
+  );
+
+  const sbCollectIgiRows = useMemo<ReferenceRow[]>(
+    () =>
+      paymentRows
+        .filter((row) => modeIncludes(row.mode, ['sb collect', 'igi']))
+        .map((row) => ({
+          label: row.mode,
+          reference: '-',
+          amount: row.amount
+        })),
+    [paymentRows]
+  );
+
+  const sbCollectAtcRows = useMemo<ReferenceRow[]>(
+    () =>
+      paymentRows
+        .filter((row) => modeIncludes(row.mode, ['sb collect', 'atc']))
+        .map((row) => ({
+          label: row.mode,
+          reference: '-',
+          amount: row.amount
+        })),
+    [paymentRows]
+  );
+
+  const arCsaRows = useMemo<ReferenceRow[]>(
+    () =>
+      paymentRows
+        .filter((row) => modeIncludes(row.mode, ['ar', 'csa']))
+        .map((row) => ({
+          label: '-',
+          reference: '-',
+          amount: row.amount
+        })),
+    [paymentRows]
+  );
+
+  const newAccounts = { silver: 0, gold: 0, platinum: 0 };
+  const upgrades = { silver: 0, gold: 0, platinum: 0 };
 
   return (
     <div>
@@ -170,7 +412,7 @@ export function SalesReportPage() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
-            className="w-full border border-gray-300 rounded-md py-2 pl-9 pr-3 text-sm"
+            className="w-full border border-gray-300 py-2 pl-9 pr-3 text-sm"
             placeholder="Search table..."
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
@@ -179,126 +421,90 @@ export function SalesReportPage() {
 
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         {!loading && !error && entriesRows.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">No records found for selected date range.</p>
+          <p className="mt-3 text-sm text-gray-600">No records found for selected date range.</p>
         ) : null}
       </section>
 
-      <div id="sales-report-print" className="bg-white mx-auto w-full max-w-[900px] p-6 border border-gray-200">
-        <header className="text-center mb-6">
-          <p className="font-bold text-base">Company Name</p>
-          <p className="font-semibold text-lg">Daily Sales Report</p>
-          <p className="text-sm text-gray-700">{reportDateLabel}</p>
-        </header>
+      <div id="sales-report-print" className="mx-auto bg-white w-full max-w-[980px] border border-gray-300 p-4 text-[11px] leading-tight">
+        <div className="text-center mb-3">
+          <p className="font-semibold">Company Name</p>
+          <p className="font-semibold">Daily Sales Report</p>
+          <p>{reportDateLabel}</p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-sm font-semibold mb-2 uppercase">Package Sales Summary</h2>
-            <div className="overflow-x-auto">
-              <table className={tableClassName}>
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className={headerCellClassName}>PACKAGE</th>
-                    <th className={`${headerCellClassName} text-right`}>QTY</th>
-                    <th className={`${headerCellClassName} text-right`}>PRICE</th>
-                    <th className={`${headerCellClassName} text-right`}>AMOUNT TOTAL</th>
-                  </tr>
-                </thead>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
+            <Box title="Package Sales Summary">
+              <SummaryTable firstHeader="PACKAGE" rows={packageSalesRows} loading={loading} totalLabel="TOTAL" />
+            </Box>
+
+            <Box title="Mobile Stockist Package">
+              <SummaryTable
+                firstHeader="PACKAGE"
+                rows={mobileStockistPackageRows}
+                loading={loading}
+                totalLabel="TOTAL"
+              />
+            </Box>
+
+            <Box title="Depot Package">
+              <SummaryTable firstHeader="PACKAGE" rows={depotPackageRows} loading={loading} totalLabel="TOTAL" />
+            </Box>
+
+            <Box title="Retail">
+              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL RETAIL SALES" />
+            </Box>
+
+            <Box title="Mobile Stockist Detail">
+              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL" />
+            </Box>
+
+            <Box title="Depot Retail">
+              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL" />
+            </Box>
+
+            <Box title="Grand Total">
+              <table className={compactTableClassName}>
+                <colgroup>
+                  <col style={{ width: '70%' }} />
+                  <col style={{ width: '30%' }} />
+                </colgroup>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={4} className={`${bodyCellClassName} text-center`}>
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : null}
-                  {!loading && packageSalesRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  ) : null}
-                  {!loading
-                    ? packageSalesRows.map((row) => (
-                        <tr key={row.packageName}>
-                          <td className={bodyCellClassName}>{row.packageName}</td>
-                          <td className={numericCellClassName}>{row.qty}</td>
-                          <td className={numericCellClassName}>{currencyFormatter.format(row.price)}</td>
-                          <td className={numericCellClassName}>{currencyFormatter.format(row.amount)}</td>
-                        </tr>
-                      ))
-                    : null}
-                  <tr className="font-semibold bg-gray-50">
-                    <td className={bodyCellClassName}>Total</td>
-                    <td className={numericCellClassName}>{packageTotalQty}</td>
-                    <td className={numericCellClassName}>-</td>
-                    <td className={numericCellClassName}>{currencyFormatter.format(packageTotalAmount)}</td>
+                  <tr>
+                    <td className={tableCellClassName}>Grand Total</td>
+                    <td className={numberCellClassName}>{currencyFormatter.format(grandTotal)}</td>
                   </tr>
                 </tbody>
               </table>
-            </div>
-
-            <h2 className="text-sm font-semibold mt-4 mb-2 uppercase">Retail</h2>
-            <div className="overflow-x-auto">
-              <table className={tableClassName}>
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className={headerCellClassName}>ITEM</th>
-                    <th className={`${headerCellClassName} text-right`}>QTY</th>
-                    <th className={`${headerCellClassName} text-right`}>PRICE</th>
-                    <th className={`${headerCellClassName} text-right`}>AMOUNT TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={4} className={`${bodyCellClassName} text-center`}>
-                      No records
-                    </td>
-                  </tr>
-                  <tr className="font-semibold bg-gray-50">
-                    <td colSpan={3} className={bodyCellClassName}>
-                      Total Retail Sales
-                    </td>
-                    <td className={numericCellClassName}>{currencyFormatter.format(0)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-4 overflow-x-auto">
-              <table className={tableClassName}>
-                <tbody>
-                  <tr className="font-semibold bg-gray-100">
-                    <td className={bodyCellClassName}>GRAND TOTAL</td>
-                    <td className={numericCellClassName}>{currencyFormatter.format(grandTotal)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            </Box>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold mb-2 uppercase">Cash on Hand</h2>
-            <div className="overflow-x-auto">
-              <table className={tableClassName}>
-                <thead className="bg-gray-100">
+          <div className="space-y-3">
+            <Box title="Cash on Hand">
+              <table className={compactTableClassName}>
+                <colgroup>
+                  <col style={{ width: '50%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '30%' }} />
+                </colgroup>
+                <thead>
                   <tr>
-                    <th className={headerCellClassName}>Denomination</th>
-                    <th className={`${headerCellClassName} text-right`}>Pieces</th>
-                    <th className={`${headerCellClassName} text-right`}>Amount</th>
+                    <th className={tableHeaderClassName}>Denomination</th>
+                    <th className={`${tableHeaderClassName} text-right`}>Pieces</th>
+                    <th className={`${tableHeaderClassName} text-right`}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
+                      <td colSpan={3} className={`${tableCellClassName} text-center`}>
                         Loading...
                       </td>
                     </tr>
                   ) : null}
                   {!loading && cashLines.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
+                      <td colSpan={3} className={`${tableCellClassName} text-center`}>
                         No records
                       </td>
                     </tr>
@@ -306,44 +512,45 @@ export function SalesReportPage() {
                   {!loading
                     ? cashLines.map((line, index) => (
                         <tr key={`${line.denomination}-${index}`}>
-                          <td className={bodyCellClassName}>{line.denomination}</td>
-                          <td className={numericCellClassName}>{line.pieces}</td>
-                          <td className={numericCellClassName}>{currencyFormatter.format(line.amount)}</td>
+                          <td className={tableCellClassName}>{line.denomination}</td>
+                          <td className={numberCellClassName}>{line.pieces}</td>
+                          <td className={numberCellClassName}>{currencyFormatter.format(line.amount)}</td>
                         </tr>
                       ))
                     : null}
-                </tbody>
-                <tfoot>
-                  <tr className="font-semibold bg-gray-50">
-                    <td colSpan={2} className={bodyCellClassName}>
+                  <tr>
+                    <td colSpan={2} className={tableCellClassName}>
                       Total Cash on Hand
                     </td>
-                    <td className={numericCellClassName}>{currencyFormatter.format(totalCashOnHand)}</td>
+                    <td className={numberCellClassName}>{currencyFormatter.format(totalCashOnHand)}</td>
                   </tr>
-                </tfoot>
+                </tbody>
               </table>
-            </div>
+            </Box>
 
-            <h2 className="text-sm font-semibold mt-4 mb-2 uppercase">Payment Breakdown</h2>
-            <div className="overflow-x-auto">
-              <table className={tableClassName}>
-                <thead className="bg-gray-100">
+            <Box title="Payment Breakdown">
+              <table className={compactTableClassName}>
+                <colgroup>
+                  <col style={{ width: '70%' }} />
+                  <col style={{ width: '30%' }} />
+                </colgroup>
+                <thead>
                   <tr>
-                    <th className={headerCellClassName}>Payment Method</th>
-                    <th className={`${headerCellClassName} text-right`}>Amount</th>
+                    <th className={tableHeaderClassName}>Payment Method</th>
+                    <th className={`${tableHeaderClassName} text-right`}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={2} className={`${bodyCellClassName} text-center`}>
+                      <td colSpan={2} className={`${tableCellClassName} text-center`}>
                         Loading...
                       </td>
                     </tr>
                   ) : null}
                   {!loading && paymentRows.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className={`${bodyCellClassName} text-center`}>
+                      <td colSpan={2} className={`${tableCellClassName} text-center`}>
                         No records
                       </td>
                     </tr>
@@ -351,169 +558,83 @@ export function SalesReportPage() {
                   {!loading
                     ? paymentRows.map((row) => (
                         <tr key={row.mode}>
-                          <td className={bodyCellClassName}>{row.mode}</td>
-                          <td className={numericCellClassName}>{currencyFormatter.format(row.amount)}</td>
+                          <td className={tableCellClassName}>{row.mode}</td>
+                          <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
                         </tr>
                       ))
                     : null}
-                </tbody>
-                <tfoot>
-                  <tr className="font-semibold bg-gray-50">
-                    <td className={bodyCellClassName}>TOTAL</td>
-                    <td className={numericCellClassName}>{currencyFormatter.format(paymentTotal)}</td>
+                  <tr>
+                    <td className={tableCellClassName}>TOTAL</td>
+                    <td className={numberCellClassName}>{currencyFormatter.format(paymentTotal)}</td>
                   </tr>
-                </tfoot>
+                </tbody>
               </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">Bank</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>Bank</th>
-                      <th className={headerCellClassName}>Reference #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">SB Collect (IGI)</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>POF/Ref#</th>
-                      <th className={headerCellClassName}>Reference #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">AR CSA</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>Name</th>
-                      <th className={headerCellClassName}>POF #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            </Box>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">Maya (IGI)</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>POF/Ref#</th>
-                      <th className={headerCellClassName}>Reference #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">SB Collect (ATC)</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>POF/Ref#</th>
-                      <th className={headerCellClassName}>Reference #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-2 uppercase">AR (Leader Support)</h3>
-              <div className="overflow-x-auto">
-                <table className={tableClassName}>
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className={headerCellClassName}>Name</th>
-                      <th className={headerCellClassName}>POF #</th>
-                      <th className={`${headerCellClassName} text-right`}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={3} className={`${bodyCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <Box title="New Accounts">
+              <MiniTable values={newAccounts} />
+            </Box>
+            <Box title="Upgrades">
+              <MiniTable values={upgrades} />
+            </Box>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-12 mt-10 pt-6 border-t border-gray-300 text-sm">
-          <div>
-            <p className="mb-12">Prepared By:</p>
-            <div className="border-t border-gray-400 pt-1 text-center">Name / Signature</div>
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <Box title="BANK (Security Bank)">
+              <ReferenceTable
+                firstHeader="Bank"
+                secondHeader="Reference #"
+                rows={bankRows}
+                loading={loading}
+              />
+            </Box>
+            <Box title="MAYA (IGI)">
+              <ReferenceTable
+                firstHeader="Maya"
+                secondHeader="Reference #"
+                rows={mayaIgiRows}
+                loading={loading}
+              />
+            </Box>
           </div>
-          <div>
-            <p className="mb-12">Checked By:</p>
-            <div className="border-t border-gray-400 pt-1 text-center">Name / Signature</div>
+
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <Box title="SB Collect (IGI)">
+              <ReferenceTable
+                firstHeader="POF/Ref#"
+                secondHeader="Reference #"
+                rows={sbCollectIgiRows}
+                loading={loading}
+              />
+            </Box>
+            <Box title="SB Collect (ATC)">
+              <ReferenceTable
+                firstHeader="POF/Ref#"
+                secondHeader="Reference #"
+                rows={sbCollectAtcRows}
+                loading={loading}
+              />
+            </Box>
+          </div>
+
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <Box title="AR CSA">
+              <ReferenceTable firstHeader="Name" secondHeader="POF #" rows={arCsaRows} loading={loading} />
+            </Box>
+            <div />
+          </div>
+
+          <div className="col-span-2 grid grid-cols-2 gap-10 pt-2">
+            <div>
+              <p className="mb-6">Prepared By:</p>
+              <div className="border-t border-gray-700 pt-1">Name / Signature</div>
+            </div>
+            <div>
+              <p className="mb-6">Checked By:</p>
+              <div className="border-t border-gray-700 pt-1">Name / Signature</div>
+            </div>
           </div>
         </div>
       </div>
