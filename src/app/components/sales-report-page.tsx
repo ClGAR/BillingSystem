@@ -22,6 +22,12 @@ type ReferenceRow = {
   amount: number;
 };
 
+type GroupedPaymentRow = {
+  normalizedKey: string;
+  mode: string;
+  amount: number;
+};
+
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP'
@@ -67,6 +73,14 @@ function formatDenomination(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/(^|[\s(/-])([a-z])/g, (_match, prefix: string, char: string) => {
+      return `${prefix}${char.toUpperCase()}`;
+    });
 }
 
 function Box({ title, children }: { title: string; children: React.ReactNode }) {
@@ -240,7 +254,6 @@ export function SalesReportPage() {
   const [searchText, setSearchText] = useState('');
   const [entriesRows, setEntriesRows] = useState<SalesEntryRecord[]>([]);
   const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
-  const [paymentTotal, setPaymentTotal] = useState(0);
   const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -257,13 +270,11 @@ export function SalesReportPage() {
       ]);
       setEntriesRows(entries);
       setPaymentRows(paymentBreakdown.rows);
-      setPaymentTotal(paymentBreakdown.total);
       setCashCountData(cashCount);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : 'Failed to load sales report.';
       setEntriesRows([]);
       setPaymentRows([]);
-      setPaymentTotal(0);
       setCashCountData(null);
       setError(message);
     } finally {
@@ -325,6 +336,46 @@ export function SalesReportPage() {
     [packageSalesRows]
   );
 
+  const normalizedPaymentRows = useMemo<GroupedPaymentRow[]>(() => {
+    const grouped = new Map<string, { amount: number; label: string }>();
+
+    paymentRows.forEach((row) => {
+      const rawKey = (row.mode || 'Unknown').trim();
+      const key = rawKey || 'Unknown';
+      const normalizedKey = key.toUpperCase();
+      const current = grouped.get(normalizedKey);
+      if (current) {
+        current.amount += toNumber(row.amount);
+      } else {
+        grouped.set(normalizedKey, {
+          amount: toNumber(row.amount),
+          label: toTitleCase(key)
+        });
+      }
+    });
+
+    return Array.from(grouped.entries())
+      .map(([normalizedKey, value]) => ({
+        normalizedKey,
+        mode: value.label,
+        amount: value.amount
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [paymentRows]);
+
+  const normalizedPaymentTotal = useMemo(
+    () => normalizedPaymentRows.reduce((sum, row) => sum + row.amount, 0),
+    [normalizedPaymentRows]
+  );
+
+  const expectedCash = useMemo(
+    () =>
+      normalizedPaymentRows
+        .filter((row) => row.normalizedKey === 'CASH')
+        .reduce((sum, row) => sum + toNumber(row.amount), 0),
+    [normalizedPaymentRows]
+  );
+
   const cashLines = cashCountData?.lines ?? [];
   const cashRows = useMemo(() => {
     const piecesByDenom = new Map<number, number>(
@@ -345,65 +396,67 @@ export function SalesReportPage() {
     () => cashRows.reduce((sum, row) => sum + row.amount, 0),
     [cashRows]
   );
+  const cashDifference = totalCashOnHand - expectedCash;
+  const cashDifferenceStatus = cashDifference > 0 ? 'Over' : cashDifference < 0 ? 'Short' : 'Balanced';
 
   const bankRows = useMemo<ReferenceRow[]>(
     () =>
-      paymentRows
+      normalizedPaymentRows
         .filter((row) => modeIncludes(row.mode, ['bank']))
         .map((row) => ({
           label: 'Security Bank',
           reference: '-',
           amount: row.amount
         })),
-    [paymentRows]
+    [normalizedPaymentRows]
   );
 
   const mayaIgiRows = useMemo<ReferenceRow[]>(
     () =>
-      paymentRows
+      normalizedPaymentRows
         .filter((row) => modeIncludes(row.mode, ['maya', 'igi']) || row.mode.toLowerCase() === 'maya')
         .map((row) => ({
           label: 'Maya',
           reference: '-',
           amount: row.amount
         })),
-    [paymentRows]
+    [normalizedPaymentRows]
   );
 
   const sbCollectIgiRows = useMemo<ReferenceRow[]>(
     () =>
-      paymentRows
+      normalizedPaymentRows
         .filter((row) => modeIncludes(row.mode, ['sb collect', 'igi']))
         .map((row) => ({
           label: row.mode,
           reference: '-',
           amount: row.amount
         })),
-    [paymentRows]
+    [normalizedPaymentRows]
   );
 
   const sbCollectAtcRows = useMemo<ReferenceRow[]>(
     () =>
-      paymentRows
+      normalizedPaymentRows
         .filter((row) => modeIncludes(row.mode, ['sb collect', 'atc']))
         .map((row) => ({
           label: row.mode,
           reference: '-',
           amount: row.amount
         })),
-    [paymentRows]
+    [normalizedPaymentRows]
   );
 
   const arCsaRows = useMemo<ReferenceRow[]>(
     () =>
-      paymentRows
+      normalizedPaymentRows
         .filter((row) => modeIncludes(row.mode, ['ar', 'csa']))
         .map((row) => ({
           label: '-',
           reference: '-',
           amount: row.amount
         })),
-    [paymentRows]
+    [normalizedPaymentRows]
   );
 
   const newAccounts = { silver: 0, gold: 0, platinum: 0 };
@@ -507,6 +560,21 @@ export function SalesReportPage() {
 
           <div className="space-y-3">
             <Box title="Cash on Hand">
+              <div className="mb-1 space-y-[2px]">
+                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
+                  <span>Expected Cash</span>
+                  <span className="tabular-nums">{currencyFormatter.format(expectedCash)}</span>
+                </div>
+                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
+                  <span>Actual Cash on Hand</span>
+                  <span className="tabular-nums">{currencyFormatter.format(totalCashOnHand)}</span>
+                </div>
+                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
+                  <span>Difference ({cashDifferenceStatus})</span>
+                  <span className="tabular-nums">{currencyFormatter.format(cashDifference)}</span>
+                </div>
+              </div>
+
               <table className={compactTableClassName}>
                 <colgroup>
                   <col style={{ width: '50%' }} />
@@ -558,7 +626,7 @@ export function SalesReportPage() {
                       </td>
                     </tr>
                   ) : null}
-                  {!loading && paymentRows.length === 0 ? (
+                  {!loading && normalizedPaymentRows.length === 0 ? (
                     <tr>
                       <td colSpan={2} className={`${tableCellClassName} text-center`}>
                         No records
@@ -566,7 +634,7 @@ export function SalesReportPage() {
                     </tr>
                   ) : null}
                   {!loading
-                    ? paymentRows.map((row) => (
+                    ? normalizedPaymentRows.map((row) => (
                         <tr key={row.mode}>
                           <td className={tableCellClassName}>{row.mode}</td>
                           <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
@@ -575,7 +643,7 @@ export function SalesReportPage() {
                     : null}
                   <tr>
                     <td className={tableCellClassName}>TOTAL</td>
-                    <td className={numberCellClassName}>{currencyFormatter.format(paymentTotal)}</td>
+                    <td className={numberCellClassName}>{currencyFormatter.format(normalizedPaymentTotal)}</td>
                   </tr>
                 </tbody>
               </table>
