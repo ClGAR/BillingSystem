@@ -53,11 +53,19 @@ const tableHeaderClassName = 'border border-gray-700 bg-gray-100 px-1 py-[2px] t
 const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
 const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
-const FIXED_PACKAGES = [
-  { key: 'Mobile Stockist', label: 'Mobile Stockist' },
-  { key: 'Platinum', label: 'Platinum' },
-  { key: 'Gold', label: 'Gold' },
-  { key: 'Silver', label: 'Silver' }
+const PACKAGE_PRICE: Record<string, number> = {
+  'Silver (1 bottle)': 3500,
+  'Gold (3 bottles)': 10500,
+  'Platinum (10 bottles)': 35000,
+  'Retail (1 bottle)': 2280,
+  'Blister (1 blister pack)': 779
+};
+const PACKAGE_ORDER = [
+  'Platinum (10 bottles)',
+  'Gold (3 bottles)',
+  'Silver (1 bottle)',
+  'Retail (1 bottle)',
+  'Blister (1 blister pack)'
 ];
 const FIXED_PACKAGE_LEVEL_ROWS = ['Platinum', 'Gold', 'Silver'];
 const FIXED_RETAIL_ROWS = ['Synbiotic+ (Bottle)', 'Synbiotic+ (Blister)', 'Employees Discount'];
@@ -403,14 +411,15 @@ export function SalesReportPage() {
       setLoading(true);
       setError(null);
       const selectedReportDate = params?.dateFrom || reportDate;
+      console.log('[SalesReport] reportDate', selectedReportDate);
       const { data: entries, error: entriesError } = await supabase
         .from('sales_entries')
-        .select('*')
+        .select('id, sale_date, created_at, package_type, total_sales')
         .eq('sale_date', selectedReportDate)
         .order('created_at', { ascending: true });
 
       if (entriesError) {
-        console.error(entriesError);
+        console.error('[SalesReport] sales_entries error', entriesError);
         throw new Error(entriesError.message || 'Failed to fetch sales report entries.');
       }
 
@@ -422,8 +431,7 @@ export function SalesReportPage() {
         }),
         getDailyCashCount(selectedReportDate)
       ]);
-      console.log('reportDate', selectedReportDate);
-      console.log('entries', entries);
+      console.log('[SalesReport] entries rows', entries?.length, entries);
 
       setEntriesRows((entries ?? []) as SalesEntry[]);
       setPaymentRows(paymentBreakdown.rows);
@@ -458,7 +466,8 @@ export function SalesReportPage() {
       const packageName = String(entry.package_type ?? '').trim() || 'Unknown';
       const key = norm(packageName);
       const current = grouped.get(key) ?? { label: packageName, qty: 0, amount: 0 };
-      current.qty += toNumber(entry.quantity);
+      const entryQty = toNumber(entry.quantity);
+      current.qty += entryQty > 0 ? entryQty : 1;
       current.amount += toNumber(entry.total_sales);
       grouped.set(key, current);
     });
@@ -468,34 +477,20 @@ export function SalesReportPage() {
         packageName: totals.label,
         qty: totals.qty,
         amount: totals.amount,
-        price: totals.qty > 0 ? totals.amount / totals.qty : 0
+        price:
+          PACKAGE_PRICE[totals.label] ?? (totals.qty > 0 ? totals.amount / totals.qty : 0)
       }))
-      .sort((a, b) => b.amount - a.amount);
-  }, [entriesRows]);
-
-  const packageSummaryMap = useMemo(() => {
-    const map = new Map<string, SummaryLike>();
-    packageSalesRows.forEach((row) => {
-      map.set(norm(row.packageName), {
-        qty: row.qty,
-        price: row.price,
-        amount: row.amount
+      .sort((a, b) => {
+        const aIndex = PACKAGE_ORDER.findIndex((pkg) => norm(pkg) === norm(a.packageName));
+        const bIndex = PACKAGE_ORDER.findIndex((pkg) => norm(pkg) === norm(b.packageName));
+        const aRank = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+        const bRank = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+        if (aRank !== bRank) {
+          return aRank - bRank;
+        }
+        return b.amount - a.amount;
       });
-    });
-    return map;
-  }, [packageSalesRows]);
-
-  const fixedPackageSalesRows = useMemo<SummaryRow[]>(() => {
-    return FIXED_PACKAGES.map((fixedPackage) => {
-      const found = getRow(packageSummaryMap, fixedPackage.key);
-      return {
-        packageName: fixedPackage.label,
-        qty: found.qty,
-        price: found.price,
-        amount: found.amount
-      };
-    });
-  }, [packageSummaryMap]);
+  }, [entriesRows]);
 
   const reportDateLabel = useMemo(() => {
     return formatDateLabel(reportDate);
@@ -776,7 +771,7 @@ export function SalesReportPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-3">
             <Box title="Package Sales Summary">
-              <SummaryTable firstHeader="PACKAGE" rows={fixedPackageSalesRows} totalLabel="Total Package Sales" />
+              <SummaryTable firstHeader="PACKAGE" rows={packageSalesRows} totalLabel="Total Package Sales" />
             </Box>
 
             <Box title="Mobile Stockist Package">
