@@ -4,8 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
 import {
   fetchPaymentBreakdown,
-  type PaymentBreakdownRow,
-  type SalesEntryRecord
+  type PaymentBreakdownRow
 } from '../../services/salesReport.service';
 
 type SummaryRow = {
@@ -31,6 +30,15 @@ type SummaryLike = {
   qty: number;
   price: number;
   amount: number;
+};
+
+type SalesEntry = {
+  id: string | number | null;
+  sale_date: string | null;
+  created_at: string | null;
+  member_name: string | null;
+  package_type: string | null;
+  total_sales: number | string | null;
 };
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -71,10 +79,6 @@ const FIXED_PAYMENTS = [
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function formatDateLabel(value: string): string {
@@ -128,7 +132,7 @@ function fixedRowsFromMap(labels: string[], map: Map<string, SummaryLike>): Summ
 }
 
 function buildSummaryMapFromEntries(
-  entries: SalesEntryRecord[],
+  entries: SalesEntry[],
   labels: string[],
   options?: { mustInclude?: string[] }
 ): Map<string, SummaryLike> {
@@ -154,7 +158,7 @@ function buildSummaryMapFromEntries(
     }
 
     const key = norm(match.label);
-    const qty = toNumber(entry.quantity);
+    const qty = 1;
     const amount = toNumber(entry.total_sales);
     const current = map.get(key) ?? { qty: 0, price: 0, amount: 0 };
     current.qty += qty;
@@ -380,7 +384,7 @@ export function SalesReportPage() {
   const [searchText, setSearchText] = useState('');
   const search = searchText;
   const setSearch = setSearchText;
-  const [entriesRows, setEntriesRows] = useState<SalesEntryRecord[]>([]);
+  const [entriesRows, setEntriesRows] = useState<SalesEntry[]>([]);
   const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
   const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -397,37 +401,26 @@ export function SalesReportPage() {
       setLoading(true);
       setError(null);
       const selectedReportDate = params?.dateFrom || reportDate;
-      let entriesQuery = supabase
-        .schema('public')
-        .from('v_sales_report')
-        .select(
-          'sale_entry_id,sale_date,member_name,po_number,username,package_type,quantity,total_sales,created_at'
-        )
-        .eq('sale_date', selectedReportDate)
-        .order('created_at', { ascending: false });
-
-      const search = params?.search?.trim();
-      if (search) {
-        entriesQuery = entriesQuery.or(
-          `member_name.ilike.%${search}%,po_number.ilike.%${search}%,username.ilike.%${search}%`
-        );
-      }
-
       const [entriesResult, paymentBreakdown, cashCount] = await Promise.all([
-        entriesQuery,
+        supabase
+          .from('sales_entries')
+          .select('id, sale_date, created_at, member_name, package_type, total_sales')
+          .eq('sale_date', selectedReportDate)
+          .order('created_at', { ascending: true }),
         fetchPaymentBreakdown({
           dateFrom: selectedReportDate,
           dateTo: selectedReportDate,
-          search: search || undefined
+          search: params?.search?.trim() || undefined
         }),
         getDailyCashCount(selectedReportDate)
       ]);
 
       if (entriesResult.error) {
+        console.error('sales_entries query error', entriesResult.error);
         throw new Error(entriesResult.error.message || 'Failed to fetch sales report entries.');
       }
 
-      const entries = (entriesResult.data ?? []) as SalesEntryRecord[];
+      const entries = (entriesResult.data ?? []) as SalesEntry[];
       console.log('reportDate', selectedReportDate);
       console.log('rows returned', entries.length);
 
@@ -457,13 +450,10 @@ export function SalesReportPage() {
     const grouped = new Map<string, { label: string; qty: number; amount: number }>();
 
     entriesRows.forEach((entry) => {
-      const packageName = String(entry.package_type ?? '').trim();
-      if (!packageName) {
-        return;
-      }
+      const packageName = String(entry.package_type ?? '').trim() || 'Unknown';
       const key = norm(packageName);
       const current = grouped.get(key) ?? { label: packageName, qty: 0, amount: 0 };
-      current.qty += toNumber(entry.quantity);
+      current.qty += 1;
       current.amount += toNumber(entry.total_sales);
       grouped.set(key, current);
     });
@@ -563,17 +553,9 @@ export function SalesReportPage() {
     [depotRetailMap]
   );
 
-  const totalPackageSalesAmount = useMemo(
-    () => fixedPackageSalesRows.reduce((sum, row) => sum + row.amount, 0),
-    [fixedPackageSalesRows]
-  );
-  const totalRetailSalesAmount = useMemo(
-    () => retailRows.reduce((sum, row) => sum + row.amount, 0),
-    [retailRows]
-  );
   const grandTotal = useMemo(
-    () => totalPackageSalesAmount + totalRetailSalesAmount,
-    [totalPackageSalesAmount, totalRetailSalesAmount]
+    () => entriesRows.reduce((sum, row) => sum + toNumber(row.total_sales), 0),
+    [entriesRows]
   );
 
   const normalizedPaymentRows = useMemo<GroupedPaymentRow[]>(() => {
