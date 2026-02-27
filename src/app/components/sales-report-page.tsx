@@ -38,6 +38,12 @@ const tableHeaderClassName = 'border border-gray-700 bg-gray-100 px-1 py-[2px] t
 const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
 const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
+const FIXED_PACKAGES = [
+  { key: 'Mobile Stockist', label: 'Mobile Stockist' },
+  { key: 'Platinum', label: 'Platinum' },
+  { key: 'Gold', label: 'Gold' },
+  { key: 'Silver', label: 'Silver' }
+];
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -73,6 +79,10 @@ function formatDenomination(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+function normalizeText(value: string): string {
+  return (value || '').trim().toLowerCase();
 }
 
 function toTitleCase(value: string): string {
@@ -312,6 +322,39 @@ export function SalesReportPage() {
       .sort((a, b) => b.amount - a.amount);
   }, [entriesRows]);
 
+  const fixedPackageSalesRows = useMemo<SummaryRow[]>(() => {
+    const pkgMap = new Map<string, { qty: number; price: number; amount: number }>();
+
+    packageSalesRows.forEach((row) => {
+      const normalizedName = normalizeText(row.packageName);
+      if (!normalizedName) {
+        return;
+      }
+      const existing = pkgMap.get(normalizedName);
+      if (existing) {
+        existing.qty += row.qty;
+        existing.amount += row.amount;
+        existing.price = existing.qty > 0 ? existing.amount / existing.qty : 0;
+      } else {
+        pkgMap.set(normalizedName, {
+          qty: row.qty,
+          price: row.price,
+          amount: row.amount
+        });
+      }
+    });
+
+    return FIXED_PACKAGES.map((fixedPackage) => {
+      const found = pkgMap.get(normalizeText(fixedPackage.key));
+      return {
+        packageName: fixedPackage.label,
+        qty: found?.qty ?? 0,
+        price: found?.price ?? 0,
+        amount: found?.amount ?? 0
+      };
+    });
+  }, [packageSalesRows]);
+
   const grandTotal = useMemo(
     () => entriesRows.reduce((sum, row) => sum + toNumber(row.total_sales), 0),
     [entriesRows]
@@ -505,7 +548,7 @@ export function SalesReportPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-3">
             <Box title="Package Sales Summary">
-              <SummaryTable firstHeader="PACKAGE" rows={packageSalesRows} loading={loading} totalLabel="TOTAL" />
+              <SummaryTable firstHeader="PACKAGE" rows={fixedPackageSalesRows} loading={loading} totalLabel="TOTAL" />
             </Box>
 
             <Box title="Mobile Stockist Package">
