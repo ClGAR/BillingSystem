@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { FormField } from './form-field';
 import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
 import {
   fetchPaymentBreakdown,
@@ -695,13 +694,22 @@ export function SalesReportPage() {
     <div>
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">Sales Report</h1>
 
-      <section className="bg-white border border-gray-200 rounded-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Report Date" type="date" value={reportDate} onChange={setReportDate} />
-          <div className="self-end">
+      <section className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+          <div className="space-y-2">
+            <label className="text-sm text-gray-600">Report Date</label>
+            <input
+              type="date"
+              className="h-11 w-full px-3 border border-gray-300 rounded-md"
+              value={reportDate}
+              onChange={(event) => setReportDate(event.target.value)}
+            />
+          </div>
+
+          <div className="lg:col-span-2">
             <button
               type="button"
-              className="erp-btn-primary w-full"
+              className="h-11 w-full bg-[#2E3A8C] text-white rounded-md hover:bg-[#1F2870]"
               onClick={() =>
                 void loadReport(buildDailyParams(searchText))
               }
@@ -712,11 +720,11 @@ export function SalesReportPage() {
         </div>
 
         <div className="mt-4 relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            className="w-full border border-gray-300 py-2 pl-9 pr-3 text-sm"
             placeholder="Search table..."
+            className="h-11 w-full pl-10 pr-3 border border-gray-300 rounded-md"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
