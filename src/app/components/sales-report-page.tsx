@@ -1,11 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Printer } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
-import {
-  fetchPaymentBreakdown,
-  type PaymentBreakdownRow
-} from '../../services/salesReport.service';
 
 type SummaryRow = {
   packageName: string;
@@ -20,12 +15,6 @@ type ReferenceRow = {
   amount: number;
 };
 
-type GroupedPaymentRow = {
-  normalizedKey: string;
-  mode: string;
-  amount: number;
-};
-
 type SalesEntry = {
   id: string | number | null;
   sale_date: string | null;
@@ -34,6 +23,14 @@ type SalesEntry = {
   package_type: string | null;
   quantity: number | string | null;
   total_sales: number | string | null;
+  [key: string]: unknown;
+};
+
+type SalesEntryPaymentRow = {
+  mode: string | null;
+  mode_type: string | null;
+  amount: number | string | null;
+  sale_entry_id: string | number | null;
   [key: string]: unknown;
 };
 
@@ -46,7 +43,18 @@ const compactTableClassName = 'w-full border-collapse table-fixed';
 const tableHeaderClassName = 'border border-gray-700 bg-gray-100 px-1 py-[2px] text-left font-semibold';
 const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
 const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
-const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
+const DENOMS = [
+  { denom: 1000, key: 'denom_1000' },
+  { denom: 500, key: 'denom_500' },
+  { denom: 200, key: 'denom_200' },
+  { denom: 100, key: 'denom_100' },
+  { denom: 50, key: 'denom_50' },
+  { denom: 20, key: 'denom_20' },
+  { denom: 10, key: 'denom_10' },
+  { denom: 5, key: 'denom_5' },
+  { denom: 1, key: 'denom_1' },
+  { denom: 0.25, key: 'denom_025' }
+] as const;
 const PACKAGE_PRICE: Record<string, number> = {
   'Mobile Stockist': 0,
   Platinum: 35000,
@@ -79,20 +87,20 @@ const RETAIL_ROWS = [
 ];
 const MOBILE_STOCKIST_RETAIL_ROWS = [{ key: 'Synbiotic+ (Bottle)', label: 'Synbiotic+ (Bottle)' }];
 const DEPOT_RETAIL_ROWS = [{ key: 'Synbiotic+ (Bottle)', label: 'Synbiotic+ (Bottle)' }];
-const FIXED_PAYMENTS = [
-  { key: 'Cash on hand', label: 'Cash on hand' },
-  { key: 'E-Wallet', label: 'E-Wallet' },
-  { key: 'Bank Transfer - Security Bank', label: 'Bank Transfer - Security Bank' },
-  { key: 'Maya (IGI)', label: 'Maya (IGI)' },
-  { key: 'Maya (ATC)', label: 'Maya (ATC)' },
-  { key: 'SB Collect (IGI)', label: 'SB Collect (IGI)' },
-  { key: 'SB Collect (ATC)', label: 'SB Collect (ATC)' },
-  { key: 'Accounts Receivable - CSA', label: 'Accounts Receivable - CSA' },
-  { key: 'Accounts Receivable - Leaders Support', label: 'Accounts Receivable - Leaders Support' },
-  { key: 'Consignment', label: 'Consignment' },
-  { key: 'Cheque', label: 'Cheque' },
-  { key: 'E-Points', label: 'E-Points' }
-];
+const PAYMENT_METHODS = [
+  'Cash on hand',
+  'E-Wallet',
+  'Bank Transfer - Security Bank',
+  'Maya (IGI)',
+  'Maya (ATC)',
+  'SB Collect (IGI)',
+  'SB Collect (ATC)',
+  'Accounts Receivable - CSA',
+  'Accounts Receivable - Leaders Support',
+  'Consignment',
+  'Cheque',
+  'E-Points'
+] as const;
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -112,11 +120,6 @@ function formatDateLabel(value: string): string {
     day: 'numeric',
     year: 'numeric'
   });
-}
-
-function modeIncludes(mode: string, tokens: string[]): boolean {
-  const normalizedMode = mode.toLowerCase();
-  return tokens.every((token) => normalizedMode.includes(token.toLowerCase()));
 }
 
 function formatDenomination(value: number): string {
@@ -234,66 +237,27 @@ function buildRetailSummary(
   return toSummaryRowsFromMap(templateRows, map);
 }
 
-function getFixedPaymentKey(value: string): string | null {
-  const key = norm(value);
-  if (!key) {
-    return null;
-  }
+function mapPaymentLabel(row: SalesEntryPaymentRow): (typeof PAYMENT_METHODS)[number] {
+  const mode = (row.mode || '').toString().trim();
+  const type = (row.mode_type || '').toString().trim();
 
-  const fixedByExact = FIXED_PAYMENTS.find((payment) => norm(payment.key) === key);
-  if (fixedByExact) {
-    return fixedByExact.key;
-  }
+  if (/^cash$/i.test(mode)) return 'Cash on hand';
+  if (/e-wallet/i.test(mode)) return 'E-Wallet';
+  if (/bank/i.test(mode)) return 'Bank Transfer - Security Bank';
 
-  if (key === 'cash') {
-    return 'Cash on hand';
-  }
-  if (key.includes('e-wallet') || key.includes('ewallet')) {
-    return 'E-Wallet';
-  }
-  if (key.includes('bank') || key.includes('security bank')) {
-    return 'Bank Transfer - Security Bank';
-  }
-  if (key.includes('maya') && key.includes('atc')) {
-    return 'Maya (ATC)';
-  }
-  if (key.includes('maya') && key.includes('igi')) {
-    return 'Maya (IGI)';
-  }
-  if (key === 'maya') {
-    return 'Maya (IGI)';
-  }
-  if (key.includes('sb collect') && key.includes('atc')) {
-    return 'SB Collect (ATC)';
-  }
-  if (key.includes('sb collect') && key.includes('igi')) {
-    return 'SB Collect (IGI)';
-  }
-  if (key.includes('ar') && key.includes('csa')) {
-    return 'Accounts Receivable - CSA';
-  }
-  if (key.includes('leader support') || key.includes('leaders support')) {
-    return 'Accounts Receivable - Leaders Support';
-  }
-  if (key.includes('consignment')) {
-    return 'Consignment';
-  }
-  if (key.includes('cheque') || key.includes('check')) {
-    return 'Cheque';
-  }
-  if (key.includes('e-points') || key.includes('epoints') || key.includes('e points')) {
-    return 'E-Points';
-  }
+  if (/maya/i.test(mode) && /igi/i.test(type)) return 'Maya (IGI)';
+  if (/maya/i.test(mode) && /atc/i.test(type)) return 'Maya (ATC)';
+  if (/sb collect/i.test(mode) && /igi/i.test(type)) return 'SB Collect (IGI)';
+  if (/sb collect/i.test(mode) && /atc/i.test(type)) return 'SB Collect (ATC)';
 
-  return null;
-}
+  if (/ar/i.test(mode) && /csa/i.test(type)) return 'Accounts Receivable - CSA';
+  if (/ar/i.test(mode) && /leader/i.test(type)) return 'Accounts Receivable - Leaders Support';
 
-function toTitleCase(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/(^|[\s(/-])([a-z])/g, (_match, prefix: string, char: string) => {
-      return `${prefix}${char.toUpperCase()}`;
-    });
+  if (/consignment/i.test(mode)) return 'Consignment';
+  if (/cheque/i.test(mode)) return 'Cheque';
+  if (/e-?points/i.test(mode)) return 'E-Points';
+
+  return 'Cash on hand';
 }
 
 function Box({ title, children }: { title: string; children: React.ReactNode }) {
@@ -449,8 +413,8 @@ export function SalesReportPage() {
   const search = searchText;
   const setSearch = setSearchText;
   const [entriesRows, setEntriesRows] = useState<SalesEntry[]>([]);
-  const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
-  const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
+  const [paymentRows, setPaymentRows] = useState<SalesEntryPaymentRow[]>([]);
+  const [cashCountRow, setCashCountRow] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -477,24 +441,57 @@ export function SalesReportPage() {
         throw new Error(entriesError.message || 'Failed to fetch sales report entries.');
       }
 
-      const [paymentBreakdown, cashCount] = await Promise.all([
-        fetchPaymentBreakdown({
-          dateFrom: selectedReportDate,
-          dateTo: selectedReportDate,
-          search: params?.search?.trim() || undefined
-        }),
-        getDailyCashCount(selectedReportDate)
-      ]);
+      const saleEntryIds = (entries ?? [])
+        .map((entry) => entry.id)
+        .filter((id): id is string | number => typeof id === 'string' || typeof id === 'number');
+
+      let payments: SalesEntryPaymentRow[] = [];
+      if (saleEntryIds.length > 0) {
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('sales_entry_payments')
+          .select('mode, mode_type, amount, sale_entry_id')
+          .in('sale_entry_id', saleEntryIds);
+
+        if (paymentError) {
+          console.error('[SalesReport] payments error', paymentError);
+        } else {
+          payments = (paymentData ?? []) as SalesEntryPaymentRow[];
+        }
+      }
+
+      let fetchedCashRow: Record<string, unknown> | null = null;
+      const { data: cashByCashDate, error: cashByCashDateError } = await supabase
+        .from('daily_cash_counts')
+        .select('*')
+        .eq('cash_date', selectedReportDate)
+        .maybeSingle();
+
+      if (cashByCashDateError) {
+        console.error('[SalesReport] daily_cash_counts cash_date error', cashByCashDateError);
+        const { data: cashBySaleDate, error: cashBySaleDateError } = await supabase
+          .from('daily_cash_counts')
+          .select('*')
+          .eq('sale_date', selectedReportDate)
+          .maybeSingle();
+        if (cashBySaleDateError) {
+          console.error('[SalesReport] daily_cash_counts sale_date error', cashBySaleDateError);
+        } else {
+          fetchedCashRow = (cashBySaleDate as Record<string, unknown> | null) ?? null;
+        }
+      } else {
+        fetchedCashRow = (cashByCashDate as Record<string, unknown> | null) ?? null;
+      }
+
       console.log('[SalesReport] entries rows', entries?.length, entries);
 
       setEntriesRows((entries ?? []) as SalesEntry[]);
-      setPaymentRows(paymentBreakdown.rows);
-      setCashCountData(cashCount);
+      setPaymentRows(payments);
+      setCashCountRow(fetchedCashRow);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : 'Failed to load sales report.';
       setEntriesRows([]);
       setPaymentRows([]);
-      setCashCountData(null);
+      setCashCountRow(null);
       setError(message);
     } finally {
       setLoading(false);
@@ -616,55 +613,26 @@ export function SalesReportPage() {
     [entriesRows]
   );
 
-  const normalizedPaymentRows = useMemo<GroupedPaymentRow[]>(() => {
-    const grouped = new Map<string, { amount: number; label: string }>();
-
-    paymentRows.forEach((row) => {
-      const rawKey = (row.mode || 'Unknown').trim();
-      const key = rawKey || 'Unknown';
-      const normalizedKey = key.toUpperCase();
-      const current = grouped.get(normalizedKey);
-      if (current) {
-        current.amount += toNumber(row.amount);
-      } else {
-        grouped.set(normalizedKey, {
-          amount: toNumber(row.amount),
-          label: toTitleCase(key)
-        });
-      }
-    });
-
-    return Array.from(grouped.entries())
-      .map(([normalizedKey, value]) => ({
-        normalizedKey,
-        mode: value.label,
-        amount: value.amount
-      }))
-      .sort((a, b) => b.amount - a.amount);
-  }, [paymentRows]);
-
   const fixedPaymentMap = useMemo(() => {
-    const payMap = new Map<string, number>();
+    const breakdownMap = new Map<string, number>();
+    PAYMENT_METHODS.forEach((label) => breakdownMap.set(label, 0));
 
-    paymentRows.forEach((row) => {
-      const paymentRow = row as PaymentBreakdownRow & { method?: string; name?: string };
-      const rawMethod = String(paymentRow.method ?? paymentRow.mode ?? paymentRow.name ?? '').trim();
-      const fixedKey = getFixedPaymentKey(rawMethod);
-      if (!fixedKey) {
+    paymentRows.forEach((payment) => {
+      const label = mapPaymentLabel(payment);
+      if (!breakdownMap.has(label)) {
         return;
       }
-      const normalizedKey = norm(fixedKey);
-      payMap.set(normalizedKey, (payMap.get(normalizedKey) ?? 0) + toNumber(row.amount));
+      breakdownMap.set(label, (breakdownMap.get(label) ?? 0) + toNumber(payment.amount));
     });
 
-    return payMap;
+    return breakdownMap;
   }, [paymentRows]);
 
   const fixedPaymentRows = useMemo(
     () =>
-      FIXED_PAYMENTS.map((fixed) => ({
-        label: fixed.label,
-        amount: fixedPaymentMap.get(norm(fixed.key)) ?? 0
+      PAYMENT_METHODS.map((label) => ({
+        label,
+        amount: fixedPaymentMap.get(label) ?? 0
       })),
     [fixedPaymentMap]
   );
@@ -675,26 +643,21 @@ export function SalesReportPage() {
   );
 
   const expectedCash = useMemo(
-    () => fixedPaymentMap.get(norm('Cash on hand')) ?? 0,
+    () => fixedPaymentMap.get('Cash on hand') ?? 0,
     [fixedPaymentMap]
   );
 
-  const cashLines = cashCountData?.lines ?? [];
   const cashRows = useMemo(() => {
-    const piecesByDenom = new Map<number, number>(
-      cashLines.map((line) => [Number(line.denomination), Number(line.pieces)])
-    );
-
     return DENOMS.map((denomination) => {
-      const rawPieces = piecesByDenom.get(denomination) ?? 0;
+      const rawPieces = toNumber(cashCountRow?.[denomination.key] as number | string | null | undefined);
       const pieces = Number.isFinite(rawPieces) ? rawPieces : 0;
       return {
-        denomination,
+        denomination: denomination.denom,
         pieces,
-        amount: denomination * pieces
+        amount: denomination.denom * pieces
       };
     });
-  }, [cashLines]);
+  }, [cashCountRow]);
   const totalCashOnHand = useMemo(
     () => cashRows.reduce((sum, row) => sum + row.amount, 0),
     [cashRows]
@@ -703,63 +666,43 @@ export function SalesReportPage() {
   const cashDifferenceStatus = cashDifference > 0 ? 'Over' : cashDifference < 0 ? 'Short' : 'Balanced';
 
   const bankRows = useMemo<ReferenceRow[]>(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => modeIncludes(row.mode, ['bank']))
-        .map((row) => ({
-          label: 'Security Bank',
-          reference: '-',
-          amount: row.amount
-        })),
-    [normalizedPaymentRows]
+    () => {
+      const amount = fixedPaymentMap.get('Bank Transfer - Security Bank') ?? 0;
+      return amount > 0 ? [{ label: 'Security Bank', reference: '-', amount }] : [];
+    },
+    [fixedPaymentMap]
   );
 
   const mayaIgiRows = useMemo<ReferenceRow[]>(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => modeIncludes(row.mode, ['maya', 'igi']) || row.mode.toLowerCase() === 'maya')
-        .map((row) => ({
-          label: 'Maya',
-          reference: '-',
-          amount: row.amount
-        })),
-    [normalizedPaymentRows]
+    () => {
+      const amount = fixedPaymentMap.get('Maya (IGI)') ?? 0;
+      return amount > 0 ? [{ label: 'Maya', reference: '-', amount }] : [];
+    },
+    [fixedPaymentMap]
   );
 
   const sbCollectIgiRows = useMemo<ReferenceRow[]>(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => modeIncludes(row.mode, ['sb collect', 'igi']))
-        .map((row) => ({
-          label: row.mode,
-          reference: '-',
-          amount: row.amount
-        })),
-    [normalizedPaymentRows]
+    () => {
+      const amount = fixedPaymentMap.get('SB Collect (IGI)') ?? 0;
+      return amount > 0 ? [{ label: 'SB Collect (IGI)', reference: '-', amount }] : [];
+    },
+    [fixedPaymentMap]
   );
 
   const sbCollectAtcRows = useMemo<ReferenceRow[]>(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => modeIncludes(row.mode, ['sb collect', 'atc']))
-        .map((row) => ({
-          label: row.mode,
-          reference: '-',
-          amount: row.amount
-        })),
-    [normalizedPaymentRows]
+    () => {
+      const amount = fixedPaymentMap.get('SB Collect (ATC)') ?? 0;
+      return amount > 0 ? [{ label: 'SB Collect (ATC)', reference: '-', amount }] : [];
+    },
+    [fixedPaymentMap]
   );
 
   const arCsaRows = useMemo<ReferenceRow[]>(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => modeIncludes(row.mode, ['ar', 'csa']))
-        .map((row) => ({
-          label: '-',
-          reference: '-',
-          amount: row.amount
-        })),
-    [normalizedPaymentRows]
+    () => {
+      const amount = fixedPaymentMap.get('Accounts Receivable - CSA') ?? 0;
+      return amount > 0 ? [{ label: '-', reference: '-', amount }] : [];
+    },
+    [fixedPaymentMap]
   );
 
   const newAccounts = { silver: 0, gold: 0, platinum: 0 };
