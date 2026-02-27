@@ -38,7 +38,9 @@ type SalesEntry = {
   created_at: string | null;
   member_name: string | null;
   package_type: string | null;
+  quantity: number | string | null;
   total_sales: number | string | null;
+  [key: string]: unknown;
 };
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -158,7 +160,7 @@ function buildSummaryMapFromEntries(
     }
 
     const key = norm(match.label);
-    const qty = 1;
+    const qty = toNumber(entry.quantity);
     const amount = toNumber(entry.total_sales);
     const current = map.get(key) ?? { qty: 0, price: 0, amount: 0 };
     current.qty += qty;
@@ -401,12 +403,18 @@ export function SalesReportPage() {
       setLoading(true);
       setError(null);
       const selectedReportDate = params?.dateFrom || reportDate;
-      const [entriesResult, paymentBreakdown, cashCount] = await Promise.all([
-        supabase
-          .from('sales_entries')
-          .select('id,sale_date,created_at,member_name,package_type,total_sales')
-          .eq('sale_date', selectedReportDate)
-          .order('created_at', { ascending: true }),
+      const { data: entries, error: entriesError } = await supabase
+        .from('sales_entries')
+        .select('*')
+        .eq('sale_date', selectedReportDate)
+        .order('created_at', { ascending: true });
+
+      if (entriesError) {
+        console.error(entriesError);
+        throw new Error(entriesError.message || 'Failed to fetch sales report entries.');
+      }
+
+      const [paymentBreakdown, cashCount] = await Promise.all([
         fetchPaymentBreakdown({
           dateFrom: selectedReportDate,
           dateTo: selectedReportDate,
@@ -414,17 +422,10 @@ export function SalesReportPage() {
         }),
         getDailyCashCount(selectedReportDate)
       ]);
-
-      if (entriesResult.error) {
-        console.error('sales_entries query error', entriesResult.error);
-        throw new Error(entriesResult.error.message || 'Failed to fetch sales report entries.');
-      }
-
-      const entries = (entriesResult.data ?? []) as SalesEntry[];
       console.log('reportDate', selectedReportDate);
       console.log('entries', entries);
 
-      setEntriesRows(entries);
+      setEntriesRows((entries ?? []) as SalesEntry[]);
       setPaymentRows(paymentBreakdown.rows);
       setCashCountData(cashCount);
     } catch (loadError) {
@@ -457,7 +458,7 @@ export function SalesReportPage() {
       const packageName = String(entry.package_type ?? '').trim() || 'Unknown';
       const key = norm(packageName);
       const current = grouped.get(key) ?? { label: packageName, qty: 0, amount: 0 };
-      current.qty += 1;
+      current.qty += toNumber(entry.quantity);
       current.amount += toNumber(entry.total_sales);
       grouped.set(key, current);
     });
