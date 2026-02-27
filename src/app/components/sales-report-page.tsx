@@ -54,6 +54,20 @@ const FIXED_PACKAGE_LEVEL_ROWS = ['Platinum', 'Gold', 'Silver'];
 const FIXED_RETAIL_ROWS = ['Synbiotic+ (Bottle)', 'Synbiotic+ (Blister)', 'Employees Discount'];
 const FIXED_MOBILE_STOCKIST_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
 const FIXED_DEPOT_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
+const FIXED_PAYMENTS = [
+  { key: 'Cash on hand', label: 'Cash on hand' },
+  { key: 'E-Wallet', label: 'E-Wallet' },
+  { key: 'Bank Transfer - Security Bank', label: 'Bank Transfer - Security Bank' },
+  { key: 'Maya (IGI)', label: 'Maya (IGI)' },
+  { key: 'Maya (ATC)', label: 'Maya (ATC)' },
+  { key: 'SB Collect (IGI)', label: 'SB Collect (IGI)' },
+  { key: 'SB Collect (ATC)', label: 'SB Collect (ATC)' },
+  { key: 'Accounts Receivable - CSA', label: 'Accounts Receivable - CSA' },
+  { key: 'Accounts Receivable - Leaders Support', label: 'Accounts Receivable - Leaders Support' },
+  { key: 'Consignment', label: 'Consignment' },
+  { key: 'Cheque', label: 'Cheque' },
+  { key: 'E-Points', label: 'E-Points' }
+];
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -151,6 +165,60 @@ function buildSummaryMapFromEntries(
   });
 
   return map;
+}
+
+function getFixedPaymentKey(value: string): string | null {
+  const key = norm(value);
+  if (!key) {
+    return null;
+  }
+
+  const fixedByExact = FIXED_PAYMENTS.find((payment) => norm(payment.key) === key);
+  if (fixedByExact) {
+    return fixedByExact.key;
+  }
+
+  if (key === 'cash') {
+    return 'Cash on hand';
+  }
+  if (key.includes('e-wallet') || key.includes('ewallet')) {
+    return 'E-Wallet';
+  }
+  if (key.includes('bank') || key.includes('security bank')) {
+    return 'Bank Transfer - Security Bank';
+  }
+  if (key.includes('maya') && key.includes('atc')) {
+    return 'Maya (ATC)';
+  }
+  if (key.includes('maya') && key.includes('igi')) {
+    return 'Maya (IGI)';
+  }
+  if (key === 'maya') {
+    return 'Maya (IGI)';
+  }
+  if (key.includes('sb collect') && key.includes('atc')) {
+    return 'SB Collect (ATC)';
+  }
+  if (key.includes('sb collect') && key.includes('igi')) {
+    return 'SB Collect (IGI)';
+  }
+  if (key.includes('ar') && key.includes('csa')) {
+    return 'Accounts Receivable - CSA';
+  }
+  if (key.includes('leader support') || key.includes('leaders support')) {
+    return 'Accounts Receivable - Leaders Support';
+  }
+  if (key.includes('consignment')) {
+    return 'Consignment';
+  }
+  if (key.includes('cheque') || key.includes('check')) {
+    return 'Cheque';
+  }
+  if (key.includes('e-points') || key.includes('epoints') || key.includes('e points')) {
+    return 'E-Points';
+  }
+
+  return null;
 }
 
 function toTitleCase(value: string): string {
@@ -501,17 +569,40 @@ export function SalesReportPage() {
       .sort((a, b) => b.amount - a.amount);
   }, [paymentRows]);
 
-  const normalizedPaymentTotal = useMemo(
-    () => normalizedPaymentRows.reduce((sum, row) => sum + row.amount, 0),
-    [normalizedPaymentRows]
+  const fixedPaymentMap = useMemo(() => {
+    const payMap = new Map<string, number>();
+
+    paymentRows.forEach((row) => {
+      const paymentRow = row as PaymentBreakdownRow & { method?: string; name?: string };
+      const rawMethod = String(paymentRow.method ?? paymentRow.mode ?? paymentRow.name ?? '').trim();
+      const fixedKey = getFixedPaymentKey(rawMethod);
+      if (!fixedKey) {
+        return;
+      }
+      const normalizedKey = norm(fixedKey);
+      payMap.set(normalizedKey, (payMap.get(normalizedKey) ?? 0) + toNumber(row.amount));
+    });
+
+    return payMap;
+  }, [paymentRows]);
+
+  const fixedPaymentRows = useMemo(
+    () =>
+      FIXED_PAYMENTS.map((fixed) => ({
+        label: fixed.label,
+        amount: fixedPaymentMap.get(norm(fixed.key)) ?? 0
+      })),
+    [fixedPaymentMap]
+  );
+
+  const fixedPaymentTotal = useMemo(
+    () => fixedPaymentRows.reduce((sum, row) => sum + row.amount, 0),
+    [fixedPaymentRows]
   );
 
   const expectedCash = useMemo(
-    () =>
-      normalizedPaymentRows
-        .filter((row) => row.normalizedKey === 'CASH')
-        .reduce((sum, row) => sum + toNumber(row.amount), 0),
-    [normalizedPaymentRows]
+    () => fixedPaymentMap.get(norm('Cash on hand')) ?? 0,
+    [fixedPaymentMap]
   );
 
   const cashLines = cashCountData?.lines ?? [];
@@ -763,31 +854,15 @@ export function SalesReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={2} className={`${tableCellClassName} text-center`}>
-                        Loading...
-                      </td>
+                  {fixedPaymentRows.map((row) => (
+                    <tr key={row.label}>
+                      <td className={tableCellClassName}>{row.label}</td>
+                      <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
                     </tr>
-                  ) : null}
-                  {!loading && normalizedPaymentRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={2} className={`${tableCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  ) : null}
-                  {!loading
-                    ? normalizedPaymentRows.map((row) => (
-                        <tr key={row.mode}>
-                          <td className={tableCellClassName}>{row.mode}</td>
-                          <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
-                        </tr>
-                      ))
-                    : null}
+                  ))}
                   <tr>
                     <td className={tableCellClassName}>TOTAL</td>
-                    <td className={numberCellClassName}>{currencyFormatter.format(normalizedPaymentTotal)}</td>
+                    <td className={numberCellClassName}>{currencyFormatter.format(fixedPaymentTotal)}</td>
                   </tr>
                 </tbody>
               </table>
