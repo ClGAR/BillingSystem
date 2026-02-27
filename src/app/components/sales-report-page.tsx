@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Printer } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
 import {
   fetchPaymentBreakdown,
-  fetchSalesEntries,
   type PaymentBreakdownRow,
   type SalesEntryRecord
 } from '../../services/salesReport.service';
@@ -376,7 +376,7 @@ function MiniTable({
 }
 
 export function SalesReportPage() {
-  const [reportDate, setReportDate] = useState(() => getTodayDateString());
+  const [reportDate, setReportDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [searchText, setSearchText] = useState('');
   const search = searchText;
   const setSearch = setSearchText;
@@ -396,12 +396,41 @@ export function SalesReportPage() {
     try {
       setLoading(true);
       setError(null);
-      const selectedCashDate = params?.dateFrom || getTodayDateString();
-      const [entries, paymentBreakdown, cashCount] = await Promise.all([
-        fetchSalesEntries(params ?? {}),
-        fetchPaymentBreakdown(params ?? {}),
-        getDailyCashCount(selectedCashDate)
+      const selectedReportDate = params?.dateFrom || reportDate;
+      let entriesQuery = supabase
+        .schema('public')
+        .from('v_sales_report')
+        .select(
+          'sale_entry_id,sale_date,member_name,po_number,username,package_type,quantity,total_sales,created_at'
+        )
+        .eq('sale_date', selectedReportDate)
+        .order('created_at', { ascending: false });
+
+      const search = params?.search?.trim();
+      if (search) {
+        entriesQuery = entriesQuery.or(
+          `member_name.ilike.%${search}%,po_number.ilike.%${search}%,username.ilike.%${search}%`
+        );
+      }
+
+      const [entriesResult, paymentBreakdown, cashCount] = await Promise.all([
+        entriesQuery,
+        fetchPaymentBreakdown({
+          dateFrom: selectedReportDate,
+          dateTo: selectedReportDate,
+          search: search || undefined
+        }),
+        getDailyCashCount(selectedReportDate)
       ]);
+
+      if (entriesResult.error) {
+        throw new Error(entriesResult.error.message || 'Failed to fetch sales report entries.');
+      }
+
+      const entries = (entriesResult.data ?? []) as SalesEntryRecord[];
+      console.log('reportDate', selectedReportDate);
+      console.log('rows returned', entries.length);
+
       setEntriesRows(entries);
       setPaymentRows(paymentBreakdown.rows);
       setCashCountData(cashCount);
