@@ -768,11 +768,11 @@ export function SalesReportPage() {
             />
           </div>
 
-          <div className="w-full lg:w-auto lg:ml-auto flex gap-2">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={handleGenerateReport}
-              className="h-11 px-6 border border-gray-400 rounded-md bg-white text-black hover:bg-gray-100 transition"
+              className="h-11 px-6 text-sm font-medium rounded-md bg-[#2E3A8C] text-white hover:bg-[#1F2870] transition"
             >
               Generate Report
             </button>
@@ -780,8 +780,7 @@ export function SalesReportPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="h-10 px-3 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2 print:hidden"
-              title="Print"
+              className="h-11 px-6 text-sm font-medium rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition flex items-center gap-2 print:hidden"
             >
               <Printer className="w-4 h-4" />
               Print
