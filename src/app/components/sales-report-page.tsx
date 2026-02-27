@@ -249,14 +249,19 @@ function MiniTable({
 }
 
 export function SalesReportPage() {
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [reportDate, setReportDate] = useState(() => getTodayDateString());
   const [searchText, setSearchText] = useState('');
   const [entriesRows, setEntriesRows] = useState<SalesEntryRecord[]>([]);
   const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
   const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const buildDailyParams = (search?: string) => ({
+    dateFrom: reportDate,
+    dateTo: reportDate,
+    search: search || undefined
+  });
 
   const loadReport = async (params?: { dateFrom?: string; dateTo?: string; search?: string }) => {
     try {
@@ -283,8 +288,8 @@ export function SalesReportPage() {
   };
 
   useEffect(() => {
-    void loadReport({});
-  }, []);
+    void loadReport(buildDailyParams());
+  }, [reportDate]);
 
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
     const grouped = new Map<string, { qty: number; amount: number }>();
@@ -313,17 +318,8 @@ export function SalesReportPage() {
   );
 
   const reportDateLabel = useMemo(() => {
-    if (dateFrom && dateTo) {
-      return `${formatDateLabel(dateFrom)} - ${formatDateLabel(dateTo)}`;
-    }
-    if (dateFrom) {
-      return formatDateLabel(dateFrom);
-    }
-    if (dateTo) {
-      return formatDateLabel(dateTo);
-    }
-    return formatDateLabel(getTodayDateString());
-  }, [dateFrom, dateTo]);
+    return formatDateLabel(reportDate);
+  }, [reportDate]);
 
   const mobileStockistPackageRows = useMemo(
     () =>
@@ -467,19 +463,14 @@ export function SalesReportPage() {
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">Sales Report</h1>
 
       <section className="bg-white border border-gray-200 rounded-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField label="Date From" type="date" value={dateFrom} onChange={setDateFrom} />
-          <FormField label="Date To" type="date" value={dateTo} onChange={setDateTo} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Report Date" type="date" value={reportDate} onChange={setReportDate} />
           <div className="self-end">
             <button
               type="button"
               className="erp-btn-primary w-full"
               onClick={() =>
-                void loadReport({
-                  dateFrom: dateFrom || undefined,
-                  dateTo: dateTo || undefined,
-                  search: searchText || undefined
-                })
+                void loadReport(buildDailyParams(searchText))
               }
             >
               Generate Report
@@ -500,7 +491,7 @@ export function SalesReportPage() {
 
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         {!loading && !error && entriesRows.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-600">No records found for selected date range.</p>
+          <p className="mt-3 text-sm text-gray-600">No records found for selected date.</p>
         ) : null}
       </section>
 
