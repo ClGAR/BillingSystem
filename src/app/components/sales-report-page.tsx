@@ -28,6 +28,12 @@ type GroupedPaymentRow = {
   amount: number;
 };
 
+type SummaryLike = {
+  qty: number;
+  price: number;
+  amount: number;
+};
+
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP'
@@ -44,6 +50,10 @@ const FIXED_PACKAGES = [
   { key: 'Gold', label: 'Gold' },
   { key: 'Silver', label: 'Silver' }
 ];
+const FIXED_PACKAGE_LEVEL_ROWS = ['Platinum', 'Gold', 'Silver'];
+const FIXED_RETAIL_ROWS = ['Synbiotic+ (Bottle)', 'Synbiotic+ (Blister)', 'Employees Discount'];
+const FIXED_MOBILE_STOCKIST_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
+const FIXED_DEPOT_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -81,8 +91,66 @@ function formatDenomination(value: number): string {
   });
 }
 
-function normalizeText(value: string): string {
-  return (value || '').trim().toLowerCase();
+const norm = (s: string) => (s || '').trim().toLowerCase();
+
+function getRow(map: Map<string, SummaryLike>, key: string, fallbackPrice = 0): SummaryLike {
+  const r = map.get(norm(key));
+  return {
+    qty: Number(r?.qty ?? 0),
+    price: Number(r?.price ?? fallbackPrice),
+    amount: Number(r?.amount ?? 0)
+  };
+}
+
+function fixedRowsFromMap(labels: string[], map: Map<string, SummaryLike>): SummaryRow[] {
+  return labels.map((label) => {
+    const row = getRow(map, label);
+    return {
+      packageName: label,
+      qty: row.qty,
+      price: row.price,
+      amount: row.amount
+    };
+  });
+}
+
+function buildSummaryMapFromEntries(
+  entries: SalesEntryRecord[],
+  labels: string[],
+  options?: { mustInclude?: string[] }
+): Map<string, SummaryLike> {
+  const map = new Map<string, SummaryLike>();
+  const normalizedLabels = labels.map((label) => ({ label, normalized: norm(label) }));
+  const mustInclude = (options?.mustInclude ?? []).map((token) => norm(token));
+
+  entries.forEach((entry) => {
+    const rawName = String(entry.package_type ?? '').trim();
+    if (!rawName) {
+      return;
+    }
+    const normalizedName = norm(rawName);
+    if (mustInclude.length > 0 && !mustInclude.every((token) => normalizedName.includes(token))) {
+      return;
+    }
+
+    const match = normalizedLabels.find(
+      ({ normalized }) => normalizedName === normalized || normalizedName.includes(normalized)
+    );
+    if (!match) {
+      return;
+    }
+
+    const key = norm(match.label);
+    const qty = toNumber(entry.quantity);
+    const amount = toNumber(entry.total_sales);
+    const current = map.get(key) ?? { qty: 0, price: 0, amount: 0 };
+    current.qty += qty;
+    current.amount += amount;
+    current.price = current.qty > 0 ? current.amount / current.qty : 0;
+    map.set(key, current);
+  });
+
+  return map;
 }
 
 function toTitleCase(value: string): string {
@@ -107,12 +175,10 @@ function Box({ title, children }: { title: string; children: React.ReactNode }) 
 function SummaryTable({
   firstHeader,
   rows,
-  loading,
   totalLabel
 }: {
   firstHeader: string;
   rows: SummaryRow[];
-  loading: boolean;
   totalLabel: string;
 }) {
   const totalQty = rows.reduce((sum, row) => sum + row.qty, 0);
@@ -135,30 +201,14 @@ function SummaryTable({
         </tr>
       </thead>
       <tbody>
-        {loading ? (
-          <tr>
-            <td colSpan={4} className={`${tableCellClassName} text-center`}>
-              Loading...
-            </td>
+        {rows.map((row) => (
+          <tr key={row.packageName}>
+            <td className={tableCellClassName}>{row.packageName}</td>
+            <td className={numberCellClassName}>{row.qty}</td>
+            <td className={numberCellClassName}>{currencyFormatter.format(row.price)}</td>
+            <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
           </tr>
-        ) : null}
-        {!loading && rows.length === 0 ? (
-          <tr>
-            <td colSpan={4} className={`${tableCellClassName} text-center`}>
-              No records
-            </td>
-          </tr>
-        ) : null}
-        {!loading
-          ? rows.map((row) => (
-              <tr key={row.packageName}>
-                <td className={tableCellClassName}>{row.packageName}</td>
-                <td className={numberCellClassName}>{row.qty}</td>
-                <td className={numberCellClassName}>{currencyFormatter.format(row.price)}</td>
-                <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
-              </tr>
-            ))
-          : null}
+        ))}
         <tr>
           <td className={tableCellClassName}>{totalLabel}</td>
           <td className={numberCellClassName}>{totalQty}</td>
@@ -302,19 +352,23 @@ export function SalesReportPage() {
   }, [reportDate]);
 
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
-    const grouped = new Map<string, { qty: number; amount: number }>();
+    const grouped = new Map<string, { label: string; qty: number; amount: number }>();
 
     entriesRows.forEach((entry) => {
-      const packageName = entry.package_type || 'Unknown';
-      const current = grouped.get(packageName) ?? { qty: 0, amount: 0 };
+      const packageName = String(entry.package_type ?? '').trim();
+      if (!packageName) {
+        return;
+      }
+      const key = norm(packageName);
+      const current = grouped.get(key) ?? { label: packageName, qty: 0, amount: 0 };
       current.qty += toNumber(entry.quantity);
       current.amount += toNumber(entry.total_sales);
-      grouped.set(packageName, current);
+      grouped.set(key, current);
     });
 
     return Array.from(grouped.entries())
-      .map(([packageName, totals]) => ({
-        packageName,
+      .map(([, totals]) => ({
+        packageName: totals.label,
         qty: totals.qty,
         amount: totals.amount,
         price: totals.qty > 0 ? totals.amount / totals.qty : 0
@@ -322,57 +376,102 @@ export function SalesReportPage() {
       .sort((a, b) => b.amount - a.amount);
   }, [entriesRows]);
 
-  const fixedPackageSalesRows = useMemo<SummaryRow[]>(() => {
-    const pkgMap = new Map<string, { qty: number; price: number; amount: number }>();
-
+  const packageSummaryMap = useMemo(() => {
+    const map = new Map<string, SummaryLike>();
     packageSalesRows.forEach((row) => {
-      const normalizedName = normalizeText(row.packageName);
-      if (!normalizedName) {
-        return;
-      }
-      const existing = pkgMap.get(normalizedName);
-      if (existing) {
-        existing.qty += row.qty;
-        existing.amount += row.amount;
-        existing.price = existing.qty > 0 ? existing.amount / existing.qty : 0;
-      } else {
-        pkgMap.set(normalizedName, {
-          qty: row.qty,
-          price: row.price,
-          amount: row.amount
-        });
-      }
+      map.set(norm(row.packageName), {
+        qty: row.qty,
+        price: row.price,
+        amount: row.amount
+      });
     });
-
-    return FIXED_PACKAGES.map((fixedPackage) => {
-      const found = pkgMap.get(normalizeText(fixedPackage.key));
-      return {
-        packageName: fixedPackage.label,
-        qty: found?.qty ?? 0,
-        price: found?.price ?? 0,
-        amount: found?.amount ?? 0
-      };
-    });
+    return map;
   }, [packageSalesRows]);
 
-  const grandTotal = useMemo(
-    () => entriesRows.reduce((sum, row) => sum + toNumber(row.total_sales), 0),
-    [entriesRows]
-  );
+  const fixedPackageSalesRows = useMemo<SummaryRow[]>(() => {
+    return FIXED_PACKAGES.map((fixedPackage) => {
+      const found = getRow(packageSummaryMap, fixedPackage.key);
+      return {
+        packageName: fixedPackage.label,
+        qty: found.qty,
+        price: found.price,
+        amount: found.amount
+      };
+    });
+  }, [packageSummaryMap]);
 
   const reportDateLabel = useMemo(() => {
     return formatDateLabel(reportDate);
   }, [reportDate]);
 
-  const mobileStockistPackageRows = useMemo(
+  const mobileStockistPackageMap = useMemo(
     () =>
-      packageSalesRows.filter((row) => row.packageName.toLowerCase().includes('mobile stockist')),
-    [packageSalesRows]
+      buildSummaryMapFromEntries(entriesRows, FIXED_PACKAGE_LEVEL_ROWS, {
+        mustInclude: ['mobile stockist']
+      }),
+    [entriesRows]
+  );
+  const mobileStockistPackageRows = useMemo(
+    () => fixedRowsFromMap(FIXED_PACKAGE_LEVEL_ROWS, mobileStockistPackageMap),
+    [mobileStockistPackageMap]
   );
 
+  const depotPackageMap = useMemo(
+    () =>
+      buildSummaryMapFromEntries(entriesRows, FIXED_PACKAGE_LEVEL_ROWS, {
+        mustInclude: ['depot']
+      }),
+    [entriesRows]
+  );
   const depotPackageRows = useMemo(
-    () => packageSalesRows.filter((row) => row.packageName.toLowerCase().includes('depot')),
-    [packageSalesRows]
+    () => fixedRowsFromMap(FIXED_PACKAGE_LEVEL_ROWS, depotPackageMap),
+    [depotPackageMap]
+  );
+
+  const retailMap = useMemo(
+    () => buildSummaryMapFromEntries(entriesRows, FIXED_RETAIL_ROWS),
+    [entriesRows]
+  );
+  const retailRows = useMemo(
+    () => fixedRowsFromMap(FIXED_RETAIL_ROWS, retailMap),
+    [retailMap]
+  );
+
+  const mobileStockistRetailMap = useMemo(
+    () =>
+      buildSummaryMapFromEntries(entriesRows, FIXED_MOBILE_STOCKIST_RETAIL_ROWS, {
+        mustInclude: ['mobile stockist']
+      }),
+    [entriesRows]
+  );
+  const mobileStockistRetailRows = useMemo(
+    () => fixedRowsFromMap(FIXED_MOBILE_STOCKIST_RETAIL_ROWS, mobileStockistRetailMap),
+    [mobileStockistRetailMap]
+  );
+
+  const depotRetailMap = useMemo(
+    () =>
+      buildSummaryMapFromEntries(entriesRows, FIXED_DEPOT_RETAIL_ROWS, {
+        mustInclude: ['depot']
+      }),
+    [entriesRows]
+  );
+  const depotRetailRows = useMemo(
+    () => fixedRowsFromMap(FIXED_DEPOT_RETAIL_ROWS, depotRetailMap),
+    [depotRetailMap]
+  );
+
+  const totalPackageSalesAmount = useMemo(
+    () => fixedPackageSalesRows.reduce((sum, row) => sum + row.amount, 0),
+    [fixedPackageSalesRows]
+  );
+  const totalRetailSalesAmount = useMemo(
+    () => retailRows.reduce((sum, row) => sum + row.amount, 0),
+    [retailRows]
+  );
+  const grandTotal = useMemo(
+    () => totalPackageSalesAmount + totalRetailSalesAmount,
+    [totalPackageSalesAmount, totalRetailSalesAmount]
   );
 
   const normalizedPaymentRows = useMemo<GroupedPaymentRow[]>(() => {
@@ -548,32 +647,43 @@ export function SalesReportPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-3">
             <Box title="Package Sales Summary">
-              <SummaryTable firstHeader="PACKAGE" rows={fixedPackageSalesRows} loading={loading} totalLabel="TOTAL" />
+              <SummaryTable firstHeader="PACKAGE" rows={fixedPackageSalesRows} totalLabel="Total Package Sales" />
             </Box>
 
             <Box title="Mobile Stockist Package">
               <SummaryTable
                 firstHeader="PACKAGE"
                 rows={mobileStockistPackageRows}
-                loading={loading}
-                totalLabel="TOTAL"
+                totalLabel="Total Mobile Stockist Package Sales"
               />
             </Box>
 
             <Box title="Depot Package">
-              <SummaryTable firstHeader="PACKAGE" rows={depotPackageRows} loading={loading} totalLabel="TOTAL" />
+              <SummaryTable
+                firstHeader="PACKAGE"
+                rows={depotPackageRows}
+                totalLabel="Total Depot Package Sales"
+              />
             </Box>
 
             <Box title="Retail">
-              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL RETAIL SALES" />
+              <SummaryTable firstHeader="ITEM" rows={retailRows} totalLabel="Total Retail Sales" />
             </Box>
 
-            <Box title="Mobile Stockist Detail">
-              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL" />
+            <Box title="Mobile Stockist Retail">
+              <SummaryTable
+                firstHeader="ITEM"
+                rows={mobileStockistRetailRows}
+                totalLabel="Total Mobile Stockist Retail Sales"
+              />
             </Box>
 
             <Box title="Depot Retail">
-              <SummaryTable firstHeader="ITEM" rows={[]} loading={false} totalLabel="TOTAL" />
+              <SummaryTable
+                firstHeader="ITEM"
+                rows={depotRetailRows}
+                totalLabel="Total Depot Retail Sales"
+              />
             </Box>
 
             <Box title="Grand Total">
