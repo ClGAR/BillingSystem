@@ -833,21 +833,6 @@ export function SalesReportPage() {
 
           <div className="space-y-3">
             <Box title="Cash on Hand">
-              <div className="mb-1 space-y-[2px]">
-                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
-                  <span>Expected Cash</span>
-                  <span className="tabular-nums">{currencyFormatter.format(expectedCash)}</span>
-                </div>
-                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
-                  <span>Actual Cash on Hand</span>
-                  <span className="tabular-nums">{currencyFormatter.format(totalCashOnHand)}</span>
-                </div>
-                <div className="flex items-center justify-between border border-gray-700 px-1 py-[2px]">
-                  <span>Difference ({cashDifferenceStatus})</span>
-                  <span className="tabular-nums">{currencyFormatter.format(cashDifference)}</span>
-                </div>
-              </div>
-
               <table className={compactTableClassName}>
                 <colgroup>
                   <col style={{ width: '50%' }} />
