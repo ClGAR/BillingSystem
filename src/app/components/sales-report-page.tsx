@@ -716,7 +716,7 @@ export function SalesReportPage() {
             <button
               type="button"
               onClick={handleGenerateReport}
-              className="h-11 px-6 w-full lg:w-auto bg-[#2E3A8C] text-white rounded-md hover:bg-[#1F2870]"
+              className="h-11 px-6 border border-gray-400 rounded-md bg-white text-black hover:bg-gray-100 transition"
             >
               Generate Report
             </button>
