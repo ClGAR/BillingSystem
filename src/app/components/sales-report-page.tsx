@@ -107,6 +107,21 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function distributeCash(amount: number) {
+  let remaining = Math.round(toNumber(amount) * 100);
+
+  const rows = DENOMS.map((d) => {
+    const denomCents = Math.round(d.denom * 100);
+    const pieces = denomCents > 0 ? Math.floor(remaining / denomCents) : 0;
+    remaining = remaining - pieces * denomCents;
+    const rowAmount = (pieces * denomCents) / 100;
+    return { denomination: d.denom, pieces, amount: rowAmount };
+  });
+
+  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  return { rows, total };
+}
+
 function formatDateLabel(value: string): string {
   if (!value) {
     return '';
@@ -642,12 +657,25 @@ export function SalesReportPage() {
     [fixedPaymentRows]
   );
 
-  const expectedCash = useMemo(
+  const cashTotal = useMemo(
     () => fixedPaymentMap.get('Cash on hand') ?? 0,
     [fixedPaymentMap]
   );
 
+  const hasDbPieces = useMemo(
+    () =>
+      Boolean(cashCountRow) &&
+      DENOMS.some((denomination) =>
+        toNumber(cashCountRow?.[denomination.key] as number | string | null | undefined) > 0
+      ),
+    [cashCountRow]
+  );
+
   const cashRows = useMemo(() => {
+    if (!hasDbPieces) {
+      return distributeCash(cashTotal).rows;
+    }
+
     return DENOMS.map((denomination) => {
       const rawPieces = toNumber(cashCountRow?.[denomination.key] as number | string | null | undefined);
       const pieces = Number.isFinite(rawPieces) ? rawPieces : 0;
@@ -657,13 +685,11 @@ export function SalesReportPage() {
         amount: denomination.denom * pieces
       };
     });
-  }, [cashCountRow]);
+  }, [cashCountRow, cashTotal, hasDbPieces]);
   const totalCashOnHand = useMemo(
     () => cashRows.reduce((sum, row) => sum + row.amount, 0),
     [cashRows]
   );
-  const cashDifference = totalCashOnHand - expectedCash;
-  const cashDifferenceStatus = cashDifference > 0 ? 'Over' : cashDifference < 0 ? 'Short' : 'Balanced';
 
   const bankRows = useMemo<ReferenceRow[]>(
     () => {
