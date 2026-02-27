@@ -459,6 +459,51 @@ export function SalesReportPage() {
     });
   };
 
+  const handlePrint = () => {
+    const el = document.getElementById('sales-report-print');
+    if (!el) {
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=1024,height=768');
+    if (!printWindow) {
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Sales Report</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            html, body { padding: 0; margin: 0; }
+            body { font-family: Inter, Arial, sans-serif; color: #111827; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #D1D5DB; padding: 6px; font-size: 11px; vertical-align: top; }
+            th { background: #F3F4F6; }
+            * { box-shadow: none !important; overflow: visible !important; }
+            .no-print { display: none !important; }
+            .page { width: 100%; }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            ${el.outerHTML}
+          </div>
+          <script>
+            window.onload = () => {
+              window.focus();
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
     const grouped = new Map<string, { label: string; qty: number; amount: number }>();
 
@@ -734,8 +779,8 @@ export function SalesReportPage() {
 
             <button
               type="button"
-              onClick={() => window.print()}
-              className="h-11 px-4 w-full lg:w-auto border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 print:hidden"
+              onClick={handlePrint}
+              className="h-10 px-3 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2 print:hidden"
               title="Print"
             >
               <Printer className="w-4 h-4" />
@@ -761,7 +806,7 @@ export function SalesReportPage() {
         ) : null}
       </div>
 
-      <div id="sales-report-print" className="mx-auto bg-white w-full max-w-[980px] border border-gray-300 p-4 text-[11px] leading-tight">
+      <div id="sales-report-print" className="mx-auto bg-white w-full max-w-[980px] border border-gray-300 p-6 text-[11px] leading-tight">
         <div className="text-center mb-3">
           <p className="font-semibold">Company Name</p>
           <p className="font-semibold">Daily Sales Report</p>
