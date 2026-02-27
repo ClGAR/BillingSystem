@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Printer } from 'lucide-react';
 import { getDailyCashCount, type DailyCashCountResult } from '../../services/cashCount.service';
 import {
   fetchPaymentBreakdown,
@@ -418,6 +418,10 @@ export function SalesReportPage() {
     void loadReport(buildDailyParams());
   }, [reportDate]);
 
+  const handleGenerateReport = () => {
+    void loadReport(buildDailyParams(searchText));
+  };
+
   const packageSalesRows = useMemo<SummaryRow[]>(() => {
     const grouped = new Map<string, { label: string; qty: number; amount: number }>();
 
@@ -695,26 +699,34 @@ export function SalesReportPage() {
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">Sales Report</h1>
 
       <section className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
-          <div className="space-y-2">
-            <label className="text-sm text-gray-600">Report Date</label>
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+          <div className="w-full lg:max-w-md">
+            <label className="block text-sm text-gray-600 mb-2">Report Date</label>
             <input
               type="date"
-              className="h-11 w-full px-3 border border-gray-300 rounded-md"
               value={reportDate}
               onChange={(event) => setReportDate(event.target.value)}
+              className="h-11 w-full px-3 border border-gray-300 rounded-md"
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="w-full lg:w-auto lg:ml-auto flex gap-3">
             <button
               type="button"
-              className="h-11 w-full bg-[#2E3A8C] text-white rounded-md hover:bg-[#1F2870]"
-              onClick={() =>
-                void loadReport(buildDailyParams(searchText))
-              }
+              onClick={handleGenerateReport}
+              className="h-11 px-6 w-full lg:w-auto bg-[#2E3A8C] text-white rounded-md hover:bg-[#1F2870]"
             >
               Generate Report
+            </button>
+
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-11 px-5 w-full lg:w-auto border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 print:hidden"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
+              Print
             </button>
           </div>
         </div>
