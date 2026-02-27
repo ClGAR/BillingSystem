@@ -31,6 +31,7 @@ const compactTableClassName = 'w-full border-collapse table-fixed';
 const tableHeaderClassName = 'border border-gray-700 bg-gray-100 px-1 py-[2px] text-left font-semibold';
 const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
 const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
+const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
 
 function toNumber(value: number | string | null | undefined): number {
   const parsed = Number(value);
@@ -59,6 +60,13 @@ function formatDateLabel(value: string): string {
 function modeIncludes(mode: string, tokens: string[]): boolean {
   const normalizedMode = mode.toLowerCase();
   return tokens.every((token) => normalizedMode.includes(token.toLowerCase()));
+}
+
+function formatDenomination(value: number): string {
+  return value.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function Box({ title, children }: { title: string; children: React.ReactNode }) {
@@ -318,7 +326,25 @@ export function SalesReportPage() {
   );
 
   const cashLines = cashCountData?.lines ?? [];
-  const totalCashOnHand = cashCountData?.header.total_cash ?? 0;
+  const cashRows = useMemo(() => {
+    const piecesByDenom = new Map<number, number>(
+      cashLines.map((line) => [Number(line.denomination), Number(line.pieces)])
+    );
+
+    return DENOMS.map((denomination) => {
+      const rawPieces = piecesByDenom.get(denomination) ?? 0;
+      const pieces = Number.isFinite(rawPieces) ? rawPieces : 0;
+      return {
+        denomination,
+        pieces,
+        amount: denomination * pieces
+      };
+    });
+  }, [cashLines]);
+  const totalCashOnHand = useMemo(
+    () => cashRows.reduce((sum, row) => sum + row.amount, 0),
+    [cashRows]
+  );
 
   const bankRows = useMemo<ReferenceRow[]>(
     () =>
@@ -495,32 +521,16 @@ export function SalesReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={3} className={`${tableCellClassName} text-center`}>
-                        Loading...
-                      </td>
+                  {cashRows.map((row) => (
+                    <tr key={row.denomination}>
+                      <td className={tableCellClassName}>{formatDenomination(row.denomination)}</td>
+                      <td className={numberCellClassName}>{row.pieces}</td>
+                      <td className={numberCellClassName}>{currencyFormatter.format(row.amount)}</td>
                     </tr>
-                  ) : null}
-                  {!loading && cashLines.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className={`${tableCellClassName} text-center`}>
-                        No records
-                      </td>
-                    </tr>
-                  ) : null}
-                  {!loading
-                    ? cashLines.map((line, index) => (
-                        <tr key={`${line.denomination}-${index}`}>
-                          <td className={tableCellClassName}>{line.denomination}</td>
-                          <td className={numberCellClassName}>{line.pieces}</td>
-                          <td className={numberCellClassName}>{currencyFormatter.format(line.amount)}</td>
-                        </tr>
-                      ))
-                    : null}
+                  ))}
                   <tr>
                     <td colSpan={2} className={tableCellClassName}>
-                      Total Cash on Hand
+                      TOTAL CASH ON HAND
                     </td>
                     <td className={numberCellClassName}>{currencyFormatter.format(totalCashOnHand)}</td>
                   </tr>
