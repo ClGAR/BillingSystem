@@ -378,6 +378,8 @@ function MiniTable({
 export function SalesReportPage() {
   const [reportDate, setReportDate] = useState(() => getTodayDateString());
   const [searchText, setSearchText] = useState('');
+  const search = searchText;
+  const setSearch = setSearchText;
   const [entriesRows, setEntriesRows] = useState<SalesEntryRecord[]>([]);
   const [paymentRows, setPaymentRows] = useState<PaymentBreakdownRow[]>([]);
   const [cashCountData, setCashCountData] = useState<DailyCashCountResult | null>(null);
@@ -698,14 +700,14 @@ export function SalesReportPage() {
     <div>
       <h1 className="text-2xl font-semibold mb-6 erp-title-primary">Sales Report</h1>
 
-      <section className="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end gap-4">
           <div className="w-full lg:max-w-md">
             <label className="block text-sm text-gray-600 mb-2">Report Date</label>
             <input
               type="date"
               value={reportDate}
-              onChange={(event) => setReportDate(event.target.value)}
+              onChange={(e) => setReportDate(e.target.value)}
               className="h-11 w-full px-3 border border-gray-300 rounded-md"
             />
           </div>
@@ -736,9 +738,9 @@ export function SalesReportPage() {
           <input
             type="text"
             placeholder="Search table..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="h-11 w-full pl-10 pr-3 border border-gray-300 rounded-md"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
           />
         </div>
 
@@ -746,7 +748,7 @@ export function SalesReportPage() {
         {!loading && !error && entriesRows.length === 0 ? (
           <p className="mt-3 text-sm text-gray-600">No records found for selected date.</p>
         ) : null}
-      </section>
+      </div>
 
       <div id="sales-report-print" className="mx-auto bg-white w-full max-w-[980px] border border-gray-300 p-4 text-[11px] leading-tight">
         <div className="text-center mb-3">
