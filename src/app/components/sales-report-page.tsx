@@ -26,12 +26,6 @@ type GroupedPaymentRow = {
   amount: number;
 };
 
-type SummaryLike = {
-  qty: number;
-  price: number;
-  amount: number;
-};
-
 type SalesEntry = {
   id: string | number | null;
   sale_date: string | null;
@@ -54,23 +48,37 @@ const tableCellClassName = 'border border-gray-700 px-1 py-[2px]';
 const numberCellClassName = `${tableCellClassName} text-right tabular-nums`;
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
 const PACKAGE_PRICE: Record<string, number> = {
+  'Mobile Stockist': 0,
+  Platinum: 35000,
+  Gold: 10500,
+  Silver: 3500,
   'Silver (1 bottle)': 3500,
   'Gold (3 bottles)': 10500,
   'Platinum (10 bottles)': 35000,
   'Retail (1 bottle)': 2280,
-  'Blister (1 blister pack)': 779
+  'Blister (1 blister pack)': 779,
+  'Synbiotic+ (Bottle)': 2280,
+  'Synbiotic+ (Blister)': 779,
+  'Employees Discount': 0
 };
-const PACKAGE_ORDER = [
-  'Platinum (10 bottles)',
-  'Gold (3 bottles)',
-  'Silver (1 bottle)',
-  'Retail (1 bottle)',
-  'Blister (1 blister pack)'
+const PACKAGE_ROWS = [
+  { key: 'Mobile Stockist', label: 'Mobile Stockist' },
+  { key: 'Platinum (10 bottles)', label: 'Platinum' },
+  { key: 'Gold (3 bottles)', label: 'Gold' },
+  { key: 'Silver (1 bottle)', label: 'Silver' }
 ];
-const FIXED_PACKAGE_LEVEL_ROWS = ['Platinum', 'Gold', 'Silver'];
-const FIXED_RETAIL_ROWS = ['Synbiotic+ (Bottle)', 'Synbiotic+ (Blister)', 'Employees Discount'];
-const FIXED_MOBILE_STOCKIST_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
-const FIXED_DEPOT_RETAIL_ROWS = ['Synbiotic+ (Bottle)'];
+const PACKAGE_LEVEL_ROWS = [
+  { key: 'Platinum (10 bottles)', label: 'Platinum' },
+  { key: 'Gold (3 bottles)', label: 'Gold' },
+  { key: 'Silver (1 bottle)', label: 'Silver' }
+];
+const RETAIL_ROWS = [
+  { key: 'Synbiotic+ (Bottle)', label: 'Synbiotic+ (Bottle)' },
+  { key: 'Synbiotic+ (Blister)', label: 'Synbiotic+ (Blister)' },
+  { key: 'Employees Discount', label: 'Employees Discount' }
+];
+const MOBILE_STOCKIST_RETAIL_ROWS = [{ key: 'Synbiotic+ (Bottle)', label: 'Synbiotic+ (Bottle)' }];
+const DEPOT_RETAIL_ROWS = [{ key: 'Synbiotic+ (Bottle)', label: 'Synbiotic+ (Bottle)' }];
 const FIXED_PAYMENTS = [
   { key: 'Cash on hand', label: 'Cash on hand' },
   { key: 'E-Wallet', label: 'E-Wallet' },
@@ -118,66 +126,112 @@ function formatDenomination(value: number): string {
   });
 }
 
-const norm = (s: string) => (s || '').trim().toLowerCase();
+const normalize = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+const norm = (v: unknown) => normalize(v).toLowerCase();
+const pkg = (entry: SalesEntry) => normalize(entry.package_type) || 'Unknown';
 
-function getRow(map: Map<string, SummaryLike>, key: string, fallbackPrice = 0): SummaryLike {
-  const r = map.get(norm(key));
-  return {
-    qty: Number(r?.qty ?? 0),
-    price: Number(r?.price ?? fallbackPrice),
-    amount: Number(r?.amount ?? 0)
-  };
+function getEntryQty(entry: SalesEntry): number {
+  const qty = toNumber(entry.quantity);
+  return qty > 0 ? qty : 1;
 }
 
-function fixedRowsFromMap(labels: string[], map: Map<string, SummaryLike>): SummaryRow[] {
-  return labels.map((label) => {
-    const row = getRow(map, label);
+function getEntryChannel(entry: SalesEntry): string {
+  return norm(
+    String(
+      entry.member_type ??
+        entry.sale_channel ??
+        entry.channel ??
+        ''
+    )
+  );
+}
+
+function toSummaryRowsFromMap(
+  templateRows: Array<{ key: string; label: string }>,
+  map: Map<string, { qty: number; amount: number }>
+): SummaryRow[] {
+  return templateRows.map((template) => {
+    const value = map.get(norm(template.key)) ?? { qty: 0, amount: 0 };
+    const price = PACKAGE_PRICE[template.key] ?? PACKAGE_PRICE[template.label] ?? 0;
     return {
-      packageName: label,
-      qty: row.qty,
-      price: row.price,
-      amount: row.amount
+      packageName: template.label,
+      qty: value.qty,
+      price,
+      amount: value.amount
     };
   });
 }
 
-function buildSummaryMapFromEntries(
+function buildSummary(
   entries: SalesEntry[],
-  labels: string[],
-  options?: { mustInclude?: string[] }
-): Map<string, SummaryLike> {
-  const map = new Map<string, SummaryLike>();
-  const normalizedLabels = labels.map((label) => ({ label, normalized: norm(label) }));
-  const mustInclude = (options?.mustInclude ?? []).map((token) => norm(token));
+  templateRows: Array<{ key: string; label: string }>
+): SummaryRow[] {
+  const map = new Map<string, { qty: number; amount: number }>();
+  templateRows.forEach((row) => map.set(norm(row.key), { qty: 0, amount: 0 }));
 
   entries.forEach((entry) => {
-    const rawName = String(entry.package_type ?? '').trim();
-    if (!rawName) {
+    const key = norm(pkg(entry));
+    if (!map.has(key)) {
       return;
     }
-    const normalizedName = norm(rawName);
-    if (mustInclude.length > 0 && !mustInclude.every((token) => normalizedName.includes(token))) {
+    const current = map.get(key);
+    if (!current) {
       return;
     }
-
-    const match = normalizedLabels.find(
-      ({ normalized }) => normalizedName === normalized || normalizedName.includes(normalized)
-    );
-    if (!match) {
-      return;
-    }
-
-    const key = norm(match.label);
-    const qty = toNumber(entry.quantity);
-    const amount = toNumber(entry.total_sales);
-    const current = map.get(key) ?? { qty: 0, price: 0, amount: 0 };
-    current.qty += qty;
-    current.amount += amount;
-    current.price = current.qty > 0 ? current.amount / current.qty : 0;
+    current.qty += getEntryQty(entry);
+    current.amount += toNumber(entry.total_sales);
     map.set(key, current);
   });
 
-  return map;
+  return toSummaryRowsFromMap(templateRows, map);
+}
+
+function getRetailKey(entry: SalesEntry): string | null {
+  const normalizedPackage = norm(pkg(entry));
+  if (
+    normalizedPackage === norm('Retail (1 bottle)') ||
+    normalizedPackage === norm('Synbiotic+ (Bottle)')
+  ) {
+    return 'Synbiotic+ (Bottle)';
+  }
+  if (
+    normalizedPackage === norm('Blister (1 blister pack)') ||
+    normalizedPackage === norm('Synbiotic+ (Blister)')
+  ) {
+    return 'Synbiotic+ (Blister)';
+  }
+  if (normalizedPackage.includes('employee')) {
+    return 'Employees Discount';
+  }
+  return null;
+}
+
+function buildRetailSummary(
+  entries: SalesEntry[],
+  templateRows: Array<{ key: string; label: string }>
+): SummaryRow[] {
+  const map = new Map<string, { qty: number; amount: number }>();
+  templateRows.forEach((row) => map.set(norm(row.key), { qty: 0, amount: 0 }));
+
+  entries.forEach((entry) => {
+    const retailKey = getRetailKey(entry);
+    if (!retailKey) {
+      return;
+    }
+    const key = norm(retailKey);
+    if (!map.has(key)) {
+      return;
+    }
+    const current = map.get(key);
+    if (!current) {
+      return;
+    }
+    current.qty += getEntryQty(entry);
+    current.amount += toNumber(entry.total_sales);
+    map.set(key, current);
+  });
+
+  return toSummaryRowsFromMap(templateRows, map);
 }
 
 function getFixedPaymentKey(value: string): string | null {
@@ -414,7 +468,7 @@ export function SalesReportPage() {
       console.log('[SalesReport] reportDate', selectedReportDate);
       const { data: entries, error: entriesError } = await supabase
         .from('sales_entries')
-        .select('id, sale_date, created_at, package_type, total_sales')
+        .select('id, sale_date, created_at, member_name, package_type, quantity, total_sales')
         .eq('sale_date', selectedReportDate)
         .order('created_at', { ascending: true });
 
@@ -504,98 +558,57 @@ export function SalesReportPage() {
     printWindow.document.close();
   };
 
-  const packageSalesRows = useMemo<SummaryRow[]>(() => {
-    const grouped = new Map<string, { label: string; qty: number; amount: number }>();
-
-    entriesRows.forEach((entry) => {
-      const packageName = String(entry.package_type ?? '').trim() || 'Unknown';
-      const key = norm(packageName);
-      const current = grouped.get(key) ?? { label: packageName, qty: 0, amount: 0 };
-      const entryQty = toNumber(entry.quantity);
-      current.qty += entryQty > 0 ? entryQty : 1;
-      current.amount += toNumber(entry.total_sales);
-      grouped.set(key, current);
-    });
-
-    return Array.from(grouped.entries())
-      .map(([, totals]) => ({
-        packageName: totals.label,
-        qty: totals.qty,
-        amount: totals.amount,
-        price:
-          PACKAGE_PRICE[totals.label] ?? (totals.qty > 0 ? totals.amount / totals.qty : 0)
-      }))
-      .sort((a, b) => {
-        const aIndex = PACKAGE_ORDER.findIndex((pkg) => norm(pkg) === norm(a.packageName));
-        const bIndex = PACKAGE_ORDER.findIndex((pkg) => norm(pkg) === norm(b.packageName));
-        const aRank = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
-        const bRank = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
-        if (aRank !== bRank) {
-          return aRank - bRank;
-        }
-        return b.amount - a.amount;
-      });
-  }, [entriesRows]);
-
   const reportDateLabel = useMemo(() => {
     return formatDateLabel(reportDate);
   }, [reportDate]);
 
-  const mobileStockistPackageMap = useMemo(
-    () =>
-      buildSummaryMapFromEntries(entriesRows, FIXED_PACKAGE_LEVEL_ROWS, {
-        mustInclude: ['mobile stockist']
-      }),
+  const missingPackageTypeEntries = useMemo(
+    () => entriesRows.filter((entry) => normalize(entry.package_type) === ''),
     [entriesRows]
-  );
-  const mobileStockistPackageRows = useMemo(
-    () => fixedRowsFromMap(FIXED_PACKAGE_LEVEL_ROWS, mobileStockistPackageMap),
-    [mobileStockistPackageMap]
   );
 
-  const depotPackageMap = useMemo(
-    () =>
-      buildSummaryMapFromEntries(entriesRows, FIXED_PACKAGE_LEVEL_ROWS, {
-        mustInclude: ['depot']
-      }),
+  useEffect(() => {
+    if (missingPackageTypeEntries.length > 0) {
+      console.warn('[SalesReport] missing package_type rows', missingPackageTypeEntries);
+    }
+  }, [missingPackageTypeEntries]);
+
+  const packageSalesRows = useMemo(
+    () => buildSummary(entriesRows, PACKAGE_ROWS),
     [entriesRows]
+  );
+
+  const mobileStockistEntries = useMemo(
+    () => entriesRows.filter((entry) => getEntryChannel(entry).includes('mobile stockist')),
+    [entriesRows]
+  );
+  const depotEntries = useMemo(
+    () => entriesRows.filter((entry) => getEntryChannel(entry).includes('depot')),
+    [entriesRows]
+  );
+
+  const mobileStockistPackageRows = useMemo(
+    () => buildSummary(mobileStockistEntries, PACKAGE_LEVEL_ROWS),
+    [mobileStockistEntries]
   );
   const depotPackageRows = useMemo(
-    () => fixedRowsFromMap(FIXED_PACKAGE_LEVEL_ROWS, depotPackageMap),
-    [depotPackageMap]
+    () => buildSummary(depotEntries, PACKAGE_LEVEL_ROWS),
+    [depotEntries]
   );
 
-  const retailMap = useMemo(
-    () => buildSummaryMapFromEntries(entriesRows, FIXED_RETAIL_ROWS),
-    [entriesRows]
-  );
   const retailRows = useMemo(
-    () => fixedRowsFromMap(FIXED_RETAIL_ROWS, retailMap),
-    [retailMap]
-  );
-
-  const mobileStockistRetailMap = useMemo(
-    () =>
-      buildSummaryMapFromEntries(entriesRows, FIXED_MOBILE_STOCKIST_RETAIL_ROWS, {
-        mustInclude: ['mobile stockist']
-      }),
+    () => buildRetailSummary(entriesRows, RETAIL_ROWS),
     [entriesRows]
   );
+
   const mobileStockistRetailRows = useMemo(
-    () => fixedRowsFromMap(FIXED_MOBILE_STOCKIST_RETAIL_ROWS, mobileStockistRetailMap),
-    [mobileStockistRetailMap]
+    () => buildRetailSummary(mobileStockistEntries, MOBILE_STOCKIST_RETAIL_ROWS),
+    [mobileStockistEntries]
   );
 
-  const depotRetailMap = useMemo(
-    () =>
-      buildSummaryMapFromEntries(entriesRows, FIXED_DEPOT_RETAIL_ROWS, {
-        mustInclude: ['depot']
-      }),
-    [entriesRows]
-  );
   const depotRetailRows = useMemo(
-    () => fixedRowsFromMap(FIXED_DEPOT_RETAIL_ROWS, depotRetailMap),
-    [depotRetailMap]
+    () => buildRetailSummary(depotEntries, DEPOT_RETAIL_ROWS),
+    [depotEntries]
   );
 
   const grandTotal = useMemo(
@@ -802,6 +815,11 @@ export function SalesReportPage() {
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         {!loading && !error && entriesRows.length === 0 ? (
           <p className="mt-3 text-sm text-gray-600">No records found for selected date.</p>
+        ) : null}
+        {!loading && !error && missingPackageTypeEntries.length > 0 ? (
+          <p className="mt-2 text-xs text-amber-700">
+            Some rows have missing package_type.
+          </p>
         ) : null}
       </div>
 
