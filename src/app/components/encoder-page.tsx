@@ -128,6 +128,7 @@ const paymentTypeOptions = [
 
 const DISCOUNT_OPTIONS = [
   { label: 'No Discount', value: 0 },
+  { label: '₱50', value: 50 },
   { label: '₱150', value: 150 },
   { label: '₱500', value: 500 },
   { label: '₱60', value: 60 },
