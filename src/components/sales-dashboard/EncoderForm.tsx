@@ -239,7 +239,7 @@ export function EncoderForm() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-2xl font-semibold text-[#2E3A8C] mb-6">New Sale Entry</h1>
+        <h1 className="text-2xl font-semibold text-[#2E3A8C] mb-6">New Sale Entry • LAYOUT TEST</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Event</label>
