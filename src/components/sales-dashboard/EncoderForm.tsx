@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+﻿import React, { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -238,13 +238,16 @@ export function EncoderForm() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-2xl font-semibold text-[#2E3A8C] mb-6">New Sale Entry</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
-          {/* Row 1 */}
+        <h1 className="text-2xl font-semibold text-[#2E3A8C] mb-6">New Sale Entry ? LAYOUT TEST</h1>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Event</label>
-            <select name="event" value={form.event} onChange={updateField} className={selectClass}>
+            <select
+              name="event"
+              value={form.event}
+              onChange={updateField}
+              className={selectClass}
+            >
               <option value="" disabled>
                 Select event
               </option>
@@ -256,7 +259,13 @@ export function EncoderForm() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
-            <input type="date" name="date" value={form.date} onChange={updateField} className={inputClass} />
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={updateField}
+              className={inputClass}
+            />
           </div>
 
           <div>
@@ -271,9 +280,6 @@ export function EncoderForm() {
             />
           </div>
 
-          <div className="hidden lg:block" />
-
-          {/* Row 2 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Member Name</label>
             <input
@@ -305,7 +311,9 @@ export function EncoderForm() {
                 type="button"
                 onClick={() => setNewMember("yes")}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  form.newMember === "yes" ? "bg-blue-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                  form.newMember === "yes"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 Yes
@@ -314,7 +322,9 @@ export function EncoderForm() {
                 type="button"
                 onClick={() => setNewMember("no")}
                 className={`px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
-                  form.newMember === "no" ? "bg-blue-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                  form.newMember === "no"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 No
@@ -322,115 +332,154 @@ export function EncoderForm() {
             </div>
           </div>
 
-          <div className="hidden lg:block" />
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Member Type</label>
+              <select
+                name="memberType"
+                value={form.memberType}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="" disabled>
+                  Select type
+                </option>
+                <option value="regular">Regular</option>
+                <option value="vip">VIP</option>
+                <option value="guest">Guest</option>
+              </select>
+            </div>
 
-          {/* Row 3 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Member Type</label>
-            <select name="memberType" value={form.memberType} onChange={updateField} className={selectClass}>
-              <option value="" disabled>
-                Select type
-              </option>
-              <option value="regular">Regular</option>
-              <option value="vip">VIP</option>
-              <option value="guest">Guest</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Package Type</label>
+              <select
+                name="packageType"
+                value={form.packageType}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="" disabled>
+                  Select package
+                </option>
+                <option value="basic">Basic</option>
+                <option value="standard">Standard</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">To Blister?</label>
+              <select
+                name="toBlister"
+                value={form.toBlister}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="" disabled>
+                  Select option
+                </option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Original Price</label>
+              <input
+                type="number"
+                name="originalPrice"
+                value={form.originalPrice}
+                readOnly
+                className={readOnlyClass}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Package Type</label>
-            <select name="packageType" value={form.packageType} onChange={updateField} className={selectClass}>
-              <option value="" disabled>
-                Select package
-              </option>
-              <option value="basic">Basic</option>
-              <option value="standard">Standard</option>
-              <option value="premium">Premium</option>
-            </select>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity</label>
+              <input
+                type="number"
+                name="quantity"
+                value={form.quantity}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Blister Count</label>
+              <input
+                type="number"
+                name="blisterCount"
+                value={form.blisterCount}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount</label>
+              <select
+                name="discountRate"
+                value={form.discountRate}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="0">No discount</option>
+                <option value="0.1">10% discount</option>
+                <option value="0.2">20% discount</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Price After Discount</label>
+              <input
+                type="number"
+                name="priceAfterDiscount"
+                value={totals.priceAfterDiscount.toFixed(2)}
+                readOnly
+                className={readOnlyClass}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">To Blister?</label>
-            <select name="toBlister" value={form.toBlister} onChange={updateField} className={selectClass}>
-              <option value="" disabled>
-                Select option
-              </option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">One-Time Discount</label>
+              <input
+                type="number"
+                name="oneTimeDiscount"
+                value={form.oneTimeDiscount}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+                step="0.01"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Sales</label>
+              <input
+                type="number"
+                name="totalSales"
+                value={totals.totalSales.toFixed(2)}
+                readOnly
+                className={readOnlyClass}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Original Price</label>
-            <input type="number" name="originalPrice" value={form.originalPrice} readOnly className={readOnlyClass} />
-          </div>
-
-          {/* Row 4 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity</label>
-            <input type="number" name="quantity" value={form.quantity} onChange={updateField} className={inputClass} min={0} />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Blister Count</label>
-            <input
-              type="number"
-              name="blisterCount"
-              value={form.blisterCount}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Discount</label>
-            <select name="discountRate" value={form.discountRate} onChange={updateField} className={selectClass}>
-              <option value="0">No discount</option>
-              <option value="0.1">10% discount</option>
-              <option value="0.2">20% discount</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Price After Discount</label>
-            <input
-              type="number"
-              name="priceAfterDiscount"
-              value={totals.priceAfterDiscount.toFixed(2)}
-              readOnly
-              className={readOnlyClass}
-            />
-          </div>
-
-          {/* Row 5 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">One-Time Discount</label>
-            <input
-              type="number"
-              name="oneTimeDiscount"
-              value={form.oneTimeDiscount}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-              step="0.01"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Sales</label>
-            <input type="number" name="totalSales" value={totals.totalSales.toFixed(2)} readOnly className={readOnlyClass} />
-          </div>
-
-          <div className="hidden lg:block" />
-          <div className="hidden lg:block" />
-
-          <div className="col-span-1 md:col-span-2 lg:col-span-4 pt-2 mt-2 border-t border-[#E5E7EB]" />
-
-          {/* Payments */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode of Payment</label>
-            <select name="paymentMode" value={form.paymentMode} onChange={updateField} className={selectClass}>
+            <select
+              name="paymentMode"
+              value={form.paymentMode}
+              onChange={updateField}
+              className={selectClass}
+            >
               <option value="" disabled>
                 Select mode
               </option>
@@ -443,7 +492,12 @@ export function EncoderForm() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Mode Type</label>
-            <select name="paymentModeType" value={form.paymentModeType} onChange={updateField} className={selectClass}>
+            <select
+              name="paymentModeType"
+              value={form.paymentModeType}
+              onChange={updateField}
+              className={selectClass}
+            >
               <option value="" disabled>
                 Select type
               </option>
@@ -465,108 +519,119 @@ export function EncoderForm() {
             />
           </div>
 
-          <div className="hidden lg:block" />
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode of Payment (2)</label>
+              <select
+                name="paymentMode2"
+                value={form.paymentMode2}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="" disabled>
+                  Select mode
+                </option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="card">Card</option>
+                <option value="gcash">GCash</option>
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Mode of Payment (2)</label>
-            <select name="paymentMode2" value={form.paymentMode2} onChange={updateField} className={selectClass}>
-              <option value="" disabled>
-                Select mode
-              </option>
-              <option value="cash">Cash</option>
-              <option value="bank">Bank Transfer</option>
-              <option value="card">Card</option>
-              <option value="gcash">GCash</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Mode Type (2)</label>
+              <select
+                name="paymentModeType2"
+                value={form.paymentModeType2}
+                onChange={updateField}
+                className={selectClass}
+              >
+                <option value="" disabled>
+                  Select type
+                </option>
+                <option value="full">Full Payment</option>
+                <option value="partial">Partial</option>
+                <option value="installment">Installment</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference Number (2)</label>
+              <input
+                type="text"
+                name="referenceNumber2"
+                placeholder="Enter reference number"
+                value={form.referenceNumber2}
+                onChange={updateField}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (2)</label>
+              <input
+                type="number"
+                name="paymentAmount2"
+                value={form.paymentAmount2}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+                step="0.01"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Mode Type (2)</label>
-            <select name="paymentModeType2" value={form.paymentModeType2} onChange={updateField} className={selectClass}>
-              <option value="" disabled>
-                Select type
-              </option>
-              <option value="full">Full Payment</option>
-              <option value="partial">Partial</option>
-              <option value="installment">Installment</option>
-            </select>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Released (Bottle)</label>
+              <input
+                type="number"
+                name="releasedBottle"
+                value={form.releasedBottle}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Released (Blister)</label>
+              <input
+                type="number"
+                name="releasedBlister"
+                value={form.releasedBlister}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">To Follow (Bottle)</label>
+              <input
+                type="number"
+                name="toFollowBottle"
+                value={form.toFollowBottle}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">To Follow (Blister)</label>
+              <input
+                type="number"
+                name="toFollowBlister"
+                value={form.toFollowBlister}
+                onChange={updateField}
+                className={inputClass}
+                min={0}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference Number (2)</label>
-            <input
-              type="text"
-              name="referenceNumber2"
-              placeholder="Enter reference number"
-              value={form.referenceNumber2}
-              onChange={updateField}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (2)</label>
-            <input
-              type="number"
-              name="paymentAmount2"
-              value={form.paymentAmount2}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-              step="0.01"
-            />
-          </div>
-
-          {/* Release / Follow-up */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Released (Bottle)</label>
-            <input
-              type="number"
-              name="releasedBottle"
-              value={form.releasedBottle}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Released (Blister)</label>
-            <input
-              type="number"
-              name="releasedBlister"
-              value={form.releasedBlister}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">To Follow (Bottle)</label>
-            <input
-              type="number"
-              name="toFollowBottle"
-              value={form.toFollowBottle}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">To Follow (Blister)</label>
-            <input
-              type="number"
-              name="toFollowBlister"
-              value={form.toFollowBlister}
-              onChange={updateField}
-              className={inputClass}
-              min={0}
-            />
-          </div>
-
-          <div className="col-span-1 md:col-span-2 lg:col-span-4">
+          <div className="md:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Remarks</label>
             <textarea
               name="remarks"
@@ -578,26 +643,45 @@ export function EncoderForm() {
             />
           </div>
 
-          <div className="col-span-1 md:col-span-1 lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Received By</label>
-            <input type="text" name="receivedBy" placeholder="Enter name" className={inputClass} />
-          </div>
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Received By</label>
+              <input
+                type="text"
+                name="receivedBy"
+                placeholder="Enter name"
+                className={inputClass}
+              />
+            </div>
 
-          <div className="col-span-1 md:col-span-1 lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Collected By</label>
-            <input type="text" name="collectedBy" placeholder="Enter name" className={inputClass} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Collected By</label>
+              <input
+                type="text"
+                name="collectedBy"
+                placeholder="Enter name"
+                className={inputClass}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 flex gap-3">
-          <button type="button" onClick={handleSave} className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded">
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded"
+          >
             Save Entry
           </button>
-          <button type="button" onClick={resetForm} className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded">
+          <button
+            type="button"
+            onClick={resetForm}
+            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded"
+          >
             Clear Form
           </button>
         </div>
       </div>
     </div>
   );
-}
