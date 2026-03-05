@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FormField } from "./form-field";
 import { FormSelect } from "./form-select";
+import type { SaleEntry } from "../../types/sales";
 
 const PAYMENT_MODES = [
   "CASH",
@@ -16,6 +17,12 @@ const SPLIT_PAYMENT_MODES = PAYMENT_MODES.filter((mode) => mode !== "MIXED");
 const CARD_TYPES = ["VISA", "MASTERCARD", "JCB", "AMEX"] as const;
 
 type PaymentMode = (typeof PAYMENT_MODES)[number];
+type SplitPaymentMode = (typeof SPLIT_PAYMENT_MODES)[number];
+
+type EncoderFormProps = {
+  onSave: (entry: SaleEntry) => void;
+  savedCount: number;
+};
 
 type FormData = {
   event: string;
@@ -66,24 +73,24 @@ const PACKAGE_PRICE_MAP: Record<string, number> = {
 
 const DISCOUNT_OPTIONS: Array<{ label: string; value: number }> = [
   { label: "No Discount", value: 0 },
-  { label: "₱50", value: 50 },
-  { label: "₱60", value: 60 },
-  { label: "₱80", value: 80 },
-  { label: "₱150", value: 150 },
-  { label: "₱180", value: 180 },
-  { label: "₱240", value: 240 },
-  { label: "₱500", value: 500 },
-  { label: "₱600", value: 600 },
-  { label: "₱800", value: 800 },
-  { label: "₱1748", value: 1748 },
-  { label: "40% (₱1,520)", value: 1520 },
-  { label: "45% (₱1,710)", value: 1710 },
-  { label: "47.5% (₱1,805)", value: 1805 },
-  { label: "50% (₱1,900)", value: 1900 },
-  { label: "40% (₱520)", value: 520 },
-  { label: "45% (₱585)", value: 585 },
-  { label: "47.5% (₱618)", value: 618 },
-  { label: "50% (₱650)", value: 650 },
+  { label: "\u20B150", value: 50 },
+  { label: "\u20B160", value: 60 },
+  { label: "\u20B180", value: 80 },
+  { label: "\u20B1150", value: 150 },
+  { label: "\u20B1180", value: 180 },
+  { label: "\u20B1240", value: 240 },
+  { label: "\u20B1500", value: 500 },
+  { label: "\u20B1600", value: 600 },
+  { label: "\u20B1800", value: 800 },
+  { label: "\u20B11748", value: 1748 },
+  { label: "40% (\u20B11,520)", value: 1520 },
+  { label: "45% (\u20B11,710)", value: 1710 },
+  { label: "47.5% (\u20B11,805)", value: 1805 },
+  { label: "50% (\u20B11,900)", value: 1900 },
+  { label: "40% (\u20B1520)", value: 520 },
+  { label: "45% (\u20B1585)", value: 585 },
+  { label: "47.5% (\u20B1618)", value: 618 },
+  { label: "50% (\u20B1650)", value: 650 },
 ];
 
 const POF_PREFIX = "POF-";
@@ -118,6 +125,41 @@ function requiresBankName(mode: string) {
 
 function requiresCardType(mode: string) {
   return mode === "CREDIT CARD";
+}
+
+function normalizeMemberType(value: string): SaleEntry["memberType"] {
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === "distributor" ||
+    normalized === "platinum" ||
+    normalized === "gold" ||
+    normalized === "silver"
+  ) {
+    return normalized;
+  }
+  return "";
+}
+
+function mapPayment(mode: SplitPaymentMode | ""): {
+  modeOfPayment: SaleEntry["modeOfPayment"];
+  paymentModeType: SaleEntry["paymentModeType"];
+} {
+  switch (mode) {
+    case "CASH":
+      return { modeOfPayment: "cash", paymentModeType: "na" };
+    case "BANK TRANSFER":
+      return { modeOfPayment: "bank", paymentModeType: "na" };
+    case "GCASH":
+      return { modeOfPayment: "ewallet", paymentModeType: "gcash" };
+    case "MAYA":
+      return { modeOfPayment: "ewallet", paymentModeType: "maya" };
+    case "CHECK":
+      return { modeOfPayment: "cheque", paymentModeType: "na" };
+    case "CREDIT CARD":
+      return { modeOfPayment: "ewallet", paymentModeType: "na" };
+    default:
+      return { modeOfPayment: "", paymentModeType: "" };
+  }
 }
 
 const initialFormData: FormData = {
@@ -164,7 +206,7 @@ const headingStyle: React.CSSProperties = {
   fontSize: "20px",
   lineHeight: "28px",
   fontWeight: 500,
-  marginBottom: "24px",
+  marginBottom: 0,
 };
 
 const cardStyle: React.CSSProperties = {
@@ -204,7 +246,7 @@ const actionButtonStyle: React.CSSProperties = {
   fontWeight: 500,
 };
 
-export function EncoderForm() {
+export function EncoderForm({ onSave, savedCount }: EncoderFormProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isRemarksFocused, setIsRemarksFocused] = useState(false);
   const [isSaveHovered, setIsSaveHovered] = useState(false);
@@ -371,48 +413,50 @@ export function EncoderForm() {
       }
     }
 
-    const paymentDetails = isMixed
-      ? [
-          {
-            mode: paymentMode1,
-            amount: primaryAmount,
-            referenceNo: formData.referenceNumber || null,
-            bankName: formData.bankName || null,
-            cardType: formData.cardType || null,
-            checkDate: formData.checkDate || null,
-          },
-          {
-            mode: paymentMode2,
-            amount: secondaryAmount,
-            referenceNo: formData.referenceNumber2 || null,
-            bankName: formData.bankName2 || null,
-            cardType: formData.cardType2 || null,
-            checkDate: formData.checkDate2 || null,
-          },
-        ]
-      : [
-          {
-            mode: formData.modeOfPayment,
-            amount: primaryAmount,
-            referenceNo: formData.referenceNumber || null,
-            bankName: formData.bankName || null,
-            cardType: formData.cardType || null,
-            checkDate: formData.checkDate || null,
-          },
-        ];
+    const primaryPayment = mapPayment(paymentMode1 as SplitPaymentMode | "");
+    const secondaryPayment = mapPayment(paymentMode2 as SplitPaymentMode | "");
 
-    const payload = {
-      ...formData,
-      pofNumber,
-      payment_mode: formData.modeOfPayment,
-      payment_details: JSON.stringify(paymentDetails),
-      payment_amount: primaryAmount,
-      payment_amount_2: isMixed ? secondaryAmount : 0,
+    const entry: SaleEntry = {
+      id:
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      savedAt: new Date().toISOString(),
+      event: formData.event,
+      date: formData.date,
+      pgfNumber: pofNumber,
+      memberName: formData.memberName,
+      username: formData.username,
+      newMember: formData.newMember.toLowerCase(),
+      memberType: normalizeMemberType(formData.memberType),
+      packageType: formData.packageType,
+      toBlister: formData.toBlister.toLowerCase(),
+      originalPrice: formData.originalPrice,
+      quantity: formData.quantity,
+      blisterCount: formData.blisterCount,
+      discount: formData.discount,
+      priceAfterDiscount: formData.priceAfterDiscount,
+      oneTimeDiscount: formData.oneTimeDiscount,
+      totalSales: String(netAmount),
+      modeOfPayment: primaryPayment.modeOfPayment,
+      paymentModeType: primaryPayment.paymentModeType,
+      referenceNumber: formData.referenceNumber,
+      modeOfPayment2: isMixed ? secondaryPayment.modeOfPayment : "",
+      paymentModeType2: isMixed ? secondaryPayment.paymentModeType : "",
+      referenceNumber2: isMixed ? formData.referenceNumber2 : "",
+      amount2: isMixed ? String(secondaryAmount) : "",
+      releasedBottles: formData.releasedBottles,
+      releasedBlister: formData.releasedBlister,
+      toFollowBottles: formData.toFollowBottles,
+      toFollowBlister: formData.toFollowBlister,
+      remarks: formData.remarks,
+      receivedBy: formData.receivedBy,
+      collectedBy: formData.collectedBy,
     };
 
-    // eslint-disable-next-line no-console
-    console.log(payload);
+    onSave(entry);
     alert("Entry saved successfully!");
+    handleClear();
   };
 
   return (
@@ -423,7 +467,15 @@ export function EncoderForm() {
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <h1 style={headingStyle}>New Sale Entry</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 style={headingStyle}>New Sale Entry</h1>
+        <span
+          className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+          style={{ backgroundColor: "#DCFCE7", color: "#15803D" }}
+        >
+          Saved Entries: {savedCount}
+        </span>
+      </div>
 
       <div className="p-8" style={cardStyle}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -538,10 +590,9 @@ export function EncoderForm() {
             onChange={(value) => handleInputChange("memberType", value)}
             options={[
               { value: "Distributor", label: "Distributor" },
-              { value: "Mobile Stockist", label: "Mobile Stockist" },
-              { value: "City Stockist", label: "City Stockist" },
-              { value: "Center", label: "Center" },
-              { value: "Non-member", label: "Non-member" },
+              { value: "Platinum", label: "Platinum" },
+              { value: "Gold", label: "Gold" },
+              { value: "Silver", label: "Silver" },
             ]}
           />
           <FormSelect

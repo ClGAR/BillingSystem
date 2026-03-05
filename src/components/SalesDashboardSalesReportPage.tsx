@@ -1,773 +1,474 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import React, { useMemo, useState } from "react";
+import type { SaleEntry } from "../types/sales";
 
-type SalesEntry = {
-  id: string;
-  sale_date: string;
-  package_type?: string | null;
-  quantity?: number | string | null;
-  total_sales?: number | string | null;
-  new_member?: string | boolean | number | null;
-  member_type?: string | null;
+type SalesDashboardSalesReportPageProps = {
+  salesEntries: SaleEntry[];
 };
 
-type SaleEntryPayment = {
-  id: string;
-  sale_entry_id: string;
-  mode?: string | null;
-  mode_type?: string | null;
-  reference_no?: string | null;
-  amount?: number | string | null;
+type PaymentKey = "cash" | "ewallet" | "bank" | "maya" | "gcash" | "cheque";
+type PaymentPart = { mode: string; type: string; reference: string; amount: number };
+
+const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25] as const;
+
+const toNumber = (value: string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
-type CashDenomination = {
-  label: string;
-  value: number;
-  count: number;
-  total: number;
-};
+const normalize = (value: string) => value.trim().toLowerCase();
 
-const toNumber = (value: unknown) => {
-  const numberValue = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numberValue) ? numberValue : 0;
-};
+const formatMoney = (value: number) =>
+  value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const norm = (value: unknown) =>
-  (value ?? "").toString().trim().toLowerCase();
+const titleCase = (value: string) =>
+  value
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(" ");
 
-const formatCurrency = (value: number) =>
-  `PHP ${value.toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+function computeTotal(entry: SaleEntry) {
+  const totalSales = toNumber(entry.totalSales);
+  if (totalSales > 0) return totalSales;
 
-const formatDenomination = (value: number) =>
-  value >= 1 ? `PHP ${value}` : `PHP ${value.toFixed(2)}`;
+  const quantity = parseInt(entry.quantity, 10) || 1;
+  const price = toNumber(entry.priceAfterDiscount) || toNumber(entry.originalPrice) || 0;
+  const oneTimeDiscount = toNumber(entry.oneTimeDiscount);
+  return Math.max(0, quantity * price - oneTimeDiscount);
+}
 
-const parseDenomination = (key: string) => {
-  const cleaned = key.toLowerCase();
-  const decimalMatch = cleaned.match(/\d+(?:[._]\d+)?/g);
-  if (!decimalMatch) return null;
-  const raw = decimalMatch[decimalMatch.length - 1];
-  const normalized = raw.replace("_", ".");
-  const value = Number(normalized);
-  return Number.isFinite(value) ? value : null;
-};
+function getPaymentParts(entry: SaleEntry): PaymentPart[] {
+  const total = computeTotal(entry);
+  const amount2 = toNumber(entry.amount2);
+  const hasSplit = Boolean(normalize(entry.modeOfPayment2)) && amount2 > 0;
+  const amount1 = Math.max(0, total - (hasSplit ? amount2 : 0));
 
-const extractCashBreakdown = (
-  row: Record<string, unknown> | null
-): CashDenomination[] | null => {
-  if (!row) return null;
-  const source =
-    (row.denominations as Record<string, unknown> | undefined) ??
-    (row.counts as Record<string, unknown> | undefined) ??
-    (row.breakdown as Record<string, unknown> | undefined) ??
-    row;
-
-  const breakdown: CashDenomination[] = [];
-  Object.entries(source).forEach(([key, value]) => {
-    if (value === null || value === undefined) return;
-    if (typeof value === "object") return;
-    const count = toNumber(value);
-    if (count === 0) return;
-    const denom = parseDenomination(key);
-    if (denom === null) return;
-    breakdown.push({
-      label: formatDenomination(denom),
-      value: denom,
-      count,
-      total: denom * count
-    });
-  });
-
-  if (breakdown.length === 0) return null;
-  breakdown.sort((a, b) => b.value - a.value);
-  return breakdown;
-};
-
-const autoDistributeCash = (cashTotal: number): CashDenomination[] => {
-  const denominations = [
-    1000,
-    500,
-    200,
-    100,
-    50,
-    20,
-    10,
-    5,
-    1,
-    0.25,
-    0.1,
-    0.05
+  const parts: PaymentPart[] = [
+    {
+      mode: normalize(entry.modeOfPayment),
+      type: normalize(entry.paymentModeType),
+      reference: entry.referenceNumber,
+      amount: amount1,
+    },
   ];
 
-  let remaining = Math.max(0, Math.round(cashTotal * 100));
-  const breakdown: CashDenomination[] = [];
-
-  denominations.forEach((denom) => {
-    const denomCents = Math.round(denom * 100);
-    const count = denomCents > 0 ? Math.floor(remaining / denomCents) : 0;
-    if (count > 0) {
-      remaining -= count * denomCents;
-      breakdown.push({
-        label: formatDenomination(denom),
-        value: denom,
-        count,
-        total: denom * count
-      });
-    }
-  });
-
-  if (remaining !== 0) {
-    const adjustment = remaining / 100;
-    breakdown.push({
-      label: "Adjustment",
-      value: adjustment,
-      count: 1,
-      total: adjustment
+  if (hasSplit) {
+    parts.push({
+      mode: normalize(entry.modeOfPayment2),
+      type: normalize(entry.paymentModeType2),
+      reference: entry.referenceNumber2,
+      amount: amount2,
     });
   }
 
-  return breakdown;
-};
+  return parts;
+}
 
-export function SalesDashboardSalesReportPage() {
-  const [reportDate, setReportDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
-  const [entries, setEntries] = useState<SalesEntry[]>([]);
-  const [payments, setPayments] = useState<SaleEntryPayment[]>([]);
-  const [cashCountRow, setCashCountRow] = useState<Record<string, unknown> | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+function matchPayment(mode: string, type: string, key: PaymentKey) {
+  switch (key) {
+    case "cash":
+      return mode === "cash" || mode === "";
+    case "bank":
+      return mode === "bank";
+    case "ewallet":
+      return mode === "ewallet" && type !== "maya";
+    case "maya":
+      return type === "maya";
+    case "gcash":
+      return type === "gcash";
+    case "cheque":
+      return mode === "cheque";
+    default:
+      return false;
+  }
+}
 
-  useEffect(() => {
-    let isMounted = true;
+function getPaymentTotal(entries: SaleEntry[], key: PaymentKey) {
+  return entries.reduce((sum, entry) => {
+    const partTotal = getPaymentParts(entry).reduce((partSum, part) => {
+      return matchPayment(part.mode, part.type, key) ? partSum + part.amount : partSum;
+    }, 0);
+    return sum + partTotal;
+  }, 0);
+}
 
-    const loadReport = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-
-      try {
-        const errors: string[] = [];
-
-        const { data: entryData, error: entryError } = await supabase
-          .from("sales_entries")
-          .select("*")
-          .eq("sale_date", reportDate);
-
-        if (entryError) {
-          if (!isMounted) return;
-          setEntries([]);
-          setPayments([]);
-          setCashCountRow(null);
-          setErrorMessage(entryError.message || "Failed to load sales report.");
-          setIsLoading(false);
-          return;
-        }
-
-        const entriesList = (entryData ?? []) as SalesEntry[];
-        if (!isMounted) return;
-        setEntries(entriesList);
-
-        if (entriesList.length === 0) {
-          setPayments([]);
-          setCashCountRow(null);
-          setIsLoading(false);
-          return;
-        }
-
-        const saleEntryIds = entriesList.map((entry) => entry.id);
-        if (saleEntryIds.length) {
-          const { data: paymentData, error: paymentError } = await supabase
-            .from("sales_entry_payments")
-            .select("*")
-            .in("sale_entry_id", saleEntryIds);
-
-          if (paymentError) {
-            errors.push(paymentError.message);
-            setPayments([]);
-          } else {
-            setPayments((paymentData ?? []) as SaleEntryPayment[]);
-          }
-        } else {
-          setPayments([]);
-        }
-
-        const { data: cashCounts, error: cashError } = await supabase
-          .from("daily_cash_counts")
-          .select("*")
-          .eq("sale_date", reportDate)
-          .maybeSingle();
-
-        if (cashError) {
-          setCashCountRow(null);
-        } else {
-          setCashCountRow(
-            (cashCounts ?? null) as Record<string, unknown> | null
-          );
-        }
-
-        if (errors.length) {
-          setErrorMessage(errors.join(" "));
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        if (!isMounted) return;
-        setEntries([]);
-        setPayments([]);
-        setCashCountRow(null);
-        setErrorMessage(
-          (error as Error)?.message || "Failed to load sales report."
-        );
-        setIsLoading(false);
-      }
-    };
-
-    loadReport();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [reportDate]);
-
-  const packageSummary = useMemo(() => {
-    const summaryMap = new Map<
-      string,
-      { label: string; quantity: number; totalSales: number }
-    >();
-
-    entries.forEach((entry) => {
-      const label = (entry.package_type ?? "").toString().trim() || "Unknown";
-      const quantity = toNumber(entry.quantity);
-      const totalSales = toNumber(entry.total_sales);
-      const existing = summaryMap.get(label) ?? {
-        label,
-        quantity: 0,
-        totalSales: 0
-      };
-
-      existing.quantity += quantity;
-      existing.totalSales += totalSales;
-      summaryMap.set(label, existing);
-    });
-
-    return Array.from(summaryMap.values());
-  }, [entries]);
-
-  const categoryTotals = useMemo(() => {
-    let mobileStockist = 0;
-    let depot = 0;
-    let retail = 0;
-    let grandTotal = 0;
-    let newAccounts = 0;
-    let upgrades = 0;
-
-    entries.forEach((entry) => {
-      const label = norm(entry.package_type);
-      const totalSales = toNumber(entry.total_sales);
-      const isNew =
-        entry.new_member === true ||
-        entry.new_member === 1 ||
-        norm(entry.new_member) === "yes" ||
-        norm(entry.new_member) === "true";
-
-      if (label.includes("mobile") || label.includes("stockist")) {
-        mobileStockist += totalSales;
-      }
-      if (label.includes("depot")) {
-        depot += totalSales;
-      }
-      if (label.includes("retail")) {
-        retail += totalSales;
-      }
-
-      if (isNew) {
-        newAccounts += 1;
-      }
-
-      const memberType = norm(entry.member_type);
-      if (memberType.includes("upgrade") || label.includes("upgrade")) {
-        upgrades += 1;
-      }
-
-      grandTotal += totalSales;
-    });
-
-    return {
-      mobileStockist,
-      depot,
-      retail,
-      grandTotal,
-      newAccounts,
-      upgrades
-    };
-  }, [entries]);
-
-  const paymentTotals = useMemo(() => {
-    const totals = {
-      cash: 0,
-      bank: 0,
-      maya: 0,
-      sbCollect: 0,
-      ar: 0,
-      cheque: 0,
-      consignment: 0,
-      ePoints: 0,
-      other: 0
-    };
-
-    const bankBreakdown = { igi: 0, atc: 0 };
-    const mayaBreakdown = { igi: 0, atc: 0 };
-    const sbCollectBreakdown = { igi: 0, atc: 0 };
-    const arBreakdown = { csa: 0, leadersSupport: 0 };
-
-    payments.forEach((payment) => {
-      const mode = norm(payment.mode);
-      const modeType = norm(payment.mode_type);
-      const amount = toNumber(payment.amount);
-
-      const isCash = mode.includes("cash");
-      const isBank = mode.includes("bank");
-      const isMaya = mode.includes("maya");
-      const isSbCollect = mode.includes("sb") && mode.includes("collect");
-      const isAr = mode.includes("ar") || mode.includes("accounts receivable");
-      const isCheque = mode.includes("cheque") || mode.includes("check");
-      const isConsignment = mode.includes("consignment");
-      const isEPoints = mode.includes("e-point") || mode.includes("epoint") || mode.includes("e point");
-
-      if (isCash) {
-        totals.cash += amount;
-        return;
-      }
-      if (isBank) {
-        totals.bank += amount;
-        if (modeType.includes("igi")) bankBreakdown.igi += amount;
-        if (modeType.includes("atc")) bankBreakdown.atc += amount;
-        return;
-      }
-      if (isMaya) {
-        totals.maya += amount;
-        if (modeType.includes("igi")) mayaBreakdown.igi += amount;
-        if (modeType.includes("atc")) mayaBreakdown.atc += amount;
-        return;
-      }
-      if (isSbCollect) {
-        totals.sbCollect += amount;
-        if (modeType.includes("igi")) sbCollectBreakdown.igi += amount;
-        if (modeType.includes("atc")) sbCollectBreakdown.atc += amount;
-        return;
-      }
-      if (isAr) {
-        totals.ar += amount;
-        if (modeType.includes("csa")) arBreakdown.csa += amount;
-        if (modeType.includes("leader") || modeType.includes("support")) {
-          arBreakdown.leadersSupport += amount;
-        }
-        return;
-      }
-      if (isCheque) {
-        totals.cheque += amount;
-        return;
-      }
-      if (isConsignment) {
-        totals.consignment += amount;
-        return;
-      }
-      if (isEPoints) {
-        totals.ePoints += amount;
-        return;
-      }
-
-      totals.other += amount;
-    });
-
-    return {
-      totals,
-      bankBreakdown,
-      mayaBreakdown,
-      sbCollectBreakdown,
-      arBreakdown
-    };
-  }, [payments]);
-
-  const cashTotal = paymentTotals.totals.cash;
-
-  const cashBreakdown = useMemo(() => {
-    const dbBreakdown = extractCashBreakdown(cashCountRow);
-    if (dbBreakdown) {
-      const dbTotal = dbBreakdown.reduce(
-        (sum, item) => sum + item.total,
-        0
-      );
-      const diff = Math.round((cashTotal - dbTotal) * 100);
-      if (diff !== 0) {
-        const adjustmentValue = diff / 100;
-        dbBreakdown.push({
-          label: "Adjustment",
-          value: adjustmentValue,
-          count: 1,
-          total: adjustmentValue
+function getPaymentDetailRows(entries: SaleEntry[], key: PaymentKey) {
+  const rows: Array<{ memberName: string; reference: string; amount: number }> = [];
+  entries.forEach((entry) => {
+    getPaymentParts(entry).forEach((part) => {
+      if (matchPayment(part.mode, part.type, key)) {
+        rows.push({
+          memberName: entry.memberName || "-",
+          reference: part.reference || "-",
+          amount: part.amount,
         });
       }
-      return dbBreakdown;
-    }
-    return autoDistributeCash(cashTotal);
-  }, [cashCountRow, cashTotal]);
+    });
+  });
+  return rows;
+}
+
+export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSalesReportPageProps) {
+  const [reportDate, setReportDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showEncodedEntries, setShowEncodedEntries] = useState(false);
+  const [cashPieces, setCashPieces] = useState<Record<string, string>>(() =>
+    Object.fromEntries(DENOMINATIONS.map((denom) => [String(denom), "0"]))
+  );
+  const [preparedBy, setPreparedBy] = useState("");
+  const [checkedBy, setCheckedBy] = useState("");
+
+  const filteredEntries = useMemo(
+    () => salesEntries.filter((entry) => entry.date === reportDate),
+    [salesEntries, reportDate]
+  );
+
+  const packageRows = useMemo(() => {
+    const memberKeys: Array<{ key: SaleEntry["memberType"]; label: string }> = [
+      { key: "distributor", label: "Distributor" },
+      { key: "platinum", label: "Platinum" },
+      { key: "gold", label: "Gold" },
+      { key: "silver", label: "Silver" },
+    ];
+
+    return memberKeys.map(({ key, label }) => {
+      const entries = filteredEntries.filter((entry) => normalize(entry.memberType) === key);
+      const qty = entries.reduce((sum, entry) => sum + (parseInt(entry.quantity, 10) || 1), 0);
+      const amount = entries.reduce((sum, entry) => sum + computeTotal(entry), 0);
+      const price = qty > 0 ? Math.round(amount / qty) : 0;
+      return { label, qty, price, amount };
+    });
+  }, [filteredEntries]);
+
+  const bottleQty = filteredEntries.reduce((sum, entry) => sum + (parseInt(entry.releasedBottles, 10) || 0), 0);
+  const blisterQty = filteredEntries.reduce((sum, entry) => sum + (parseInt(entry.releasedBlister, 10) || 0), 0);
+  const retailRows = [
+    { label: "Bottle", qty: bottleQty, price: 2280, amount: bottleQty * 2280 },
+    { label: "Blister", qty: blisterQty, price: 1299, amount: blisterQty * 1299 },
+    { label: "Employee Discount", qty: 0, price: 0, amount: 0 },
+  ];
+
+  const packageTotal = packageRows.reduce((sum, row) => sum + row.amount, 0);
+  const retailTotal = retailRows.reduce((sum, row) => sum + row.amount, 0);
+  const grandTotal = packageTotal + retailTotal;
+
+  const paymentRows: Array<{ label: string; key: PaymentKey }> = [
+    { label: "Cash on Hand", key: "cash" },
+    { label: "E-Wallet", key: "ewallet" },
+    { label: "Bank Transfer", key: "bank" },
+    { label: "Maya", key: "maya" },
+    { label: "GCash", key: "gcash" },
+    { label: "Cheque", key: "cheque" },
+  ];
+
+  const paymentTotals = paymentRows.map((row) => ({
+    ...row,
+    amount: getPaymentTotal(filteredEntries, row.key),
+  }));
+
+  const bankDetails = getPaymentDetailRows(filteredEntries, "bank");
+  const mayaDetails = getPaymentDetailRows(filteredEntries, "maya");
+  const gcashDetails = getPaymentDetailRows(filteredEntries, "gcash");
+
+  const newSilver = filteredEntries.filter(
+    (entry) => normalize(entry.newMember) === "yes" && normalize(entry.memberType) === "silver"
+  ).length;
+  const newGold = filteredEntries.filter(
+    (entry) => normalize(entry.newMember) === "yes" && normalize(entry.memberType) === "gold"
+  ).length;
+  const newPlatinum = filteredEntries.filter(
+    (entry) => normalize(entry.newMember) === "yes" && normalize(entry.memberType) === "platinum"
+  ).length;
+
+  const cashTotal = DENOMINATIONS.reduce((sum, denom) => {
+    return sum + denom * toNumber(cashPieces[String(denom)] || "0");
+  }, 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 no-print">
-        <div className="text-sm text-gray-600">
-          {isLoading ? "Loading sales report..." : "Sales report"}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Report Date</span>
+    <div className="bg-white rounded-lg border border-gray-300 p-4" style={{ fontFamily: "Arial, sans-serif", fontSize: "11px" }}>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <span>Report Date:</span>
           <input
             type="date"
             value={reportDate}
-            onChange={(e) =>
-              setReportDate(
-                e.target.value || new Date().toISOString().slice(0, 10)
-              )
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(event) => setReportDate(event.target.value || new Date().toISOString().slice(0, 10))}
+            className="border border-black px-2 py-1"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => setShowEncodedEntries((prev) => !prev)}
+          className="rounded border border-black px-3 py-1"
+        >
+          {showEncodedEntries ? "Hide Encoded Entries" : "Show Encoded Entries"}
+        </button>
       </div>
 
-      {errorMessage ? (
-        <div className="mt-4 text-sm text-red-600 no-print">{errorMessage}</div>
-      ) : null}
+      <div className="border border-black p-3">
+        <div className="text-center font-bold">Company Name</div>
+        <div className="text-center font-bold">Daily Sales Report</div>
+        <div className="text-center">Date: {reportDate}</div>
 
-      <div id="print-root" className="print-only mt-6">
-        <div data-print-fit>
-          <div className="flex flex-wrap items-baseline justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Sales Report
-              </h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Report Date: {reportDate}
-              </p>
-            </div>
-            <div className="text-sm text-gray-600">
-              Entries: {entries.length}
+        <div className="mt-4 grid gap-4" style={{ gridTemplateColumns: "56% 44%" }}>
+          <div className="space-y-3">
+            <table className="w-full border border-black border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1 text-left">Package Sales (Member Type)</th>
+                  <th className="border border-black px-2 py-1 text-right">Qty</th>
+                  <th className="border border-black px-2 py-1 text-right">Price</th>
+                  <th className="border border-black px-2 py-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {packageRows.map((row) => (
+                  <tr key={row.label}>
+                    <td className="border border-black px-2 py-1">{row.label}</td>
+                    <td className="border border-black px-2 py-1 text-right">{row.qty}</td>
+                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.price)}</td>
+                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <table className="w-full border border-black border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1 text-left">Retail Sales</th>
+                  <th className="border border-black px-2 py-1 text-right">Qty</th>
+                  <th className="border border-black px-2 py-1 text-right">Price</th>
+                  <th className="border border-black px-2 py-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {retailRows.map((row) => (
+                  <tr key={row.label}>
+                    <td className="border border-black px-2 py-1">{row.label}</td>
+                    <td className="border border-black px-2 py-1 text-right">{row.qty}</td>
+                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.price)}</td>
+                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex justify-end border border-black px-2 py-1 font-bold">
+              Grand Total: {formatMoney(grandTotal)}
             </div>
           </div>
 
-          <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-sm font-semibold text-gray-700">
-                Package Sales Summary
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Package
-                    </th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
-                      Quantity
-                    </th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
-                      Total Sales
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {packageSummary.length > 0 ? (
-                    packageSummary.map((item) => (
-                      <tr key={item.label}>
-                        <td className="px-4 py-2 text-gray-900">
-                          {item.label}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {item.quantity.toLocaleString("en-PH")}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {formatCurrency(item.totalSales)}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-4 py-2 text-gray-500">Total</td>
-                      <td className="px-4 py-2 text-right text-gray-500">
-                        0
+          <div className="space-y-3">
+            <table className="w-full border border-black border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1 text-left">Cash Count</th>
+                  <th className="border border-black px-2 py-1 text-right">Pieces</th>
+                  <th className="border border-black px-2 py-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DENOMINATIONS.map((denom) => {
+                  const pieces = toNumber(cashPieces[String(denom)] || "0");
+                  return (
+                    <tr key={denom}>
+                      <td className="border border-black px-2 py-1">{formatMoney(denom)}</td>
+                      <td className="border border-black px-2 py-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={cashPieces[String(denom)] || "0"}
+                          onChange={(event) =>
+                            setCashPieces((prev) => ({ ...prev, [String(denom)]: event.target.value }))
+                          }
+                          className="w-full px-1"
+                        />
                       </td>
-                      <td className="px-4 py-2 text-right text-gray-500">
-                        {formatCurrency(0)}
-                      </td>
+                      <td className="border border-black px-2 py-1 text-right">{formatMoney(denom * pieces)}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  );
+                })}
+                <tr>
+                  <td className="border border-black px-2 py-1 font-bold" colSpan={2}>
+                    Total
+                  </td>
+                  <td className="border border-black px-2 py-1 text-right font-bold">{formatMoney(cashTotal)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="border border-gray-200 rounded-lg">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Package Totals
-                </h2>
-              </div>
-              <div className="px-4 py-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Mobile Stockist Package</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(categoryTotals.mobileStockist)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Depot Package</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(categoryTotals.depot)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Retail</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(categoryTotals.retail)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Grand Total</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(categoryTotals.grandTotal)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Account Activity
-                </h2>
-              </div>
-              <div className="px-4 py-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">New Accounts</span>
-                  <span className="font-semibold text-gray-900">
-                    {categoryTotals.newAccounts.toLocaleString("en-PH")}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Upgrades</span>
-                  <span className="font-semibold text-gray-900">
-                    {categoryTotals.upgrades.toLocaleString("en-PH")}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  Payment Totals
-                </h2>
-              </div>
-              <div className="px-4 py-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Cash on Hand</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.cash)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Bank</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.bank)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Maya</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.maya)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">SB Collect</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.sbCollect)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-sm font-semibold text-gray-700">
-                Payment Breakdown
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 py-4 text-sm">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Cash on Hand</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.cash)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">
-                    Bank (Security Bank)
-                  </span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.bank)}
-                  </span>
-                </div>
-                <div className="pl-4 space-y-1 text-xs text-gray-500">
-                  <div className="flex items-center justify-between">
-                    <span>IGI</span>
-                    <span>{formatCurrency(paymentTotals.bankBreakdown.igi)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>ATC</span>
-                    <span>{formatCurrency(paymentTotals.bankBreakdown.atc)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Maya (IGI / ATC)</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.maya)}
-                  </span>
-                </div>
-                <div className="pl-4 space-y-1 text-xs text-gray-500">
-                  <div className="flex items-center justify-between">
-                    <span>IGI</span>
-                    <span>{formatCurrency(paymentTotals.mayaBreakdown.igi)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>ATC</span>
-                    <span>{formatCurrency(paymentTotals.mayaBreakdown.atc)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">SB Collect (IGI / ATC)</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.sbCollect)}
-                  </span>
-                </div>
-                <div className="pl-4 space-y-1 text-xs text-gray-500">
-                  <div className="flex items-center justify-between">
-                    <span>IGI</span>
-                    <span>{formatCurrency(paymentTotals.sbCollectBreakdown.igi)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>ATC</span>
-                    <span>{formatCurrency(paymentTotals.sbCollectBreakdown.atc)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">AR CSA</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.arBreakdown.csa)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">AR Leaders Support</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.arBreakdown.leadersSupport)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Cheque</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.cheque)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Consignment</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.consignment)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">E-Points</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.ePoints)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Other</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(paymentTotals.totals.other)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-sm font-semibold text-gray-700">
-                Cash on Hand Breakdown
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Denomination
-                    </th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
-                      Pieces
-                    </th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
-                      Total
-                    </th>
+            <table className="w-full border border-black border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1 text-left">Payment Breakdown</th>
+                  <th className="border border-black px-2 py-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paymentTotals.map((row) => (
+                  <tr key={row.label}>
+                    <td className="border border-black px-2 py-1">{row.label}</td>
+                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {cashBreakdown.length > 0 ? (
-                    cashBreakdown.map((row, index) => (
-                      <tr key={`${row.label}-${index}`}>
-                        <td className="px-4 py-2 text-gray-900">{row.label}</td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {row.count.toLocaleString("en-PH")}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {formatCurrency(row.total)}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-4 py-2 text-gray-500">Total</td>
-                      <td className="px-4 py-2 text-right text-gray-500">
-                        0
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <table className="w-full border border-black border-collapse">
+            <thead>
+              <tr><th className="border border-black px-2 py-1 text-left" colSpan={2}>New Accounts</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="border border-black px-2 py-1">Silver</td><td className="border border-black px-2 py-1 text-right">{newSilver}</td></tr>
+              <tr><td className="border border-black px-2 py-1">Gold</td><td className="border border-black px-2 py-1 text-right">{newGold}</td></tr>
+              <tr><td className="border border-black px-2 py-1">Platinum</td><td className="border border-black px-2 py-1 text-right">{newPlatinum}</td></tr>
+            </tbody>
+          </table>
+          <table className="w-full border border-black border-collapse">
+            <thead>
+              <tr><th className="border border-black px-2 py-1 text-left">Upgrades</th><th className="border border-black px-2 py-1 text-right">Count</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="border border-black px-2 py-1">Total Upgrades</td><td className="border border-black px-2 py-1 text-right">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4">
+          <table className="w-full border border-black border-collapse">
+            <thead>
+              <tr>
+                <th className="border border-black px-2 py-1 text-left" colSpan={3}>Bank Transfer Details</th>
+              </tr>
+              <tr>
+                <th className="border border-black px-2 py-1 text-left">Member Name</th>
+                <th className="border border-black px-2 py-1 text-left">Reference No</th>
+                <th className="border border-black px-2 py-1 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(bankDetails.length ? bankDetails : [{ memberName: "-", reference: "-", amount: 0 }]).map((row, index) => (
+                <tr key={`bank-${index}`}>
+                  <td className="border border-black px-2 py-1">{row.memberName}</td>
+                  <td className="border border-black px-2 py-1">{row.reference}</td>
+                  <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <table className="w-full border border-black border-collapse">
+            <thead>
+              <tr><th className="border border-black px-2 py-1 text-left" colSpan={3}>Maya Details</th></tr>
+              <tr>
+                <th className="border border-black px-2 py-1 text-left">Member Name</th>
+                <th className="border border-black px-2 py-1 text-left">Reference No</th>
+                <th className="border border-black px-2 py-1 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(mayaDetails.length ? mayaDetails : [{ memberName: "-", reference: "-", amount: 0 }]).map((row, index) => (
+                <tr key={`maya-${index}`}>
+                  <td className="border border-black px-2 py-1">{row.memberName}</td>
+                  <td className="border border-black px-2 py-1">{row.reference}</td>
+                  <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <table className="w-full border border-black border-collapse">
+            <thead>
+              <tr><th className="border border-black px-2 py-1 text-left" colSpan={3}>GCash Details</th></tr>
+              <tr>
+                <th className="border border-black px-2 py-1 text-left">Member Name</th>
+                <th className="border border-black px-2 py-1 text-left">Reference No</th>
+                <th className="border border-black px-2 py-1 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(gcashDetails.length ? gcashDetails : [{ memberName: "-", reference: "-", amount: 0 }]).map((row, index) => (
+                <tr key={`gcash-${index}`}>
+                  <td className="border border-black px-2 py-1">{row.memberName}</td>
+                  <td className="border border-black px-2 py-1">{row.reference}</td>
+                  <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {showEncodedEntries && (
+          <div className="mt-4">
+            <table className="w-full border border-black border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1 text-left">#</th>
+                  <th className="border border-black px-2 py-1 text-left">PGF No.</th>
+                  <th className="border border-black px-2 py-1 text-left">Member Name</th>
+                  <th className="border border-black px-2 py-1 text-left">Member Type</th>
+                  <th className="border border-black px-2 py-1 text-left">Pkg Type</th>
+                  <th className="border border-black px-2 py-1 text-right">Qty</th>
+                  <th className="border border-black px-2 py-1 text-right">Total Sales</th>
+                  <th className="border border-black px-2 py-1 text-left">Payment 1</th>
+                  <th className="border border-black px-2 py-1 text-left">Payment 2</th>
+                  <th className="border border-black px-2 py-1 text-left">Released B/Bl</th>
+                  <th className="border border-black px-2 py-1 text-left">Received By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(filteredEntries.length ? filteredEntries : []).map((entry, index) => {
+                  const parts = getPaymentParts(entry);
+                  const part1 = parts[0];
+                  const part2 = parts[1];
+                  return (
+                    <tr key={entry.id}>
+                      <td className="border border-black px-2 py-1">{index + 1}</td>
+                      <td className="border border-black px-2 py-1">{entry.pgfNumber}</td>
+                      <td className="border border-black px-2 py-1">{entry.memberName}</td>
+                      <td className="border border-black px-2 py-1">{titleCase(entry.memberType || "-")}</td>
+                      <td className="border border-black px-2 py-1">{entry.packageType}</td>
+                      <td className="border border-black px-2 py-1 text-right">{parseInt(entry.quantity, 10) || 1}</td>
+                      <td className="border border-black px-2 py-1 text-right">{formatMoney(computeTotal(entry))}</td>
+                      <td className="border border-black px-2 py-1">
+                        {part1 ? `${titleCase(part1.mode || "cash")} ${part1.reference ? `(${part1.reference})` : ""} - ${formatMoney(part1.amount)}` : "-"}
                       </td>
-                      <td className="px-4 py-2 text-right text-gray-500">
-                        {formatCurrency(0)}
+                      <td className="border border-black px-2 py-1">
+                        {part2 ? `${titleCase(part2.mode)} ${part2.reference ? `(${part2.reference})` : ""} - ${formatMoney(part2.amount)}` : "-"}
                       </td>
+                      <td className="border border-black px-2 py-1">{`${entry.releasedBottles || "0"} / ${entry.releasedBlister || "0"}`}</td>
+                      <td className="border border-black px-2 py-1">{entry.receivedBy || "-"}</td>
                     </tr>
-                  )}
-                </tbody>
-                <tfoot className="bg-gray-50 border-t border-gray-200">
-                  <tr>
-                    <td className="px-4 py-2 text-sm font-semibold text-gray-700">
-                      Total Cash on Hand
-                    </td>
-                    <td />
-                    <td className="px-4 py-2 text-right text-sm font-semibold text-gray-900">
-                      {formatCurrency(cashTotal)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="mt-6 grid grid-cols-2 gap-8">
+          <div>
+            <div>Prepared By:</div>
+            <input
+              type="text"
+              value={preparedBy}
+              onChange={(event) => setPreparedBy(event.target.value)}
+              className="mt-3 w-full border-b border-black py-1 outline-none"
+            />
+          </div>
+          <div>
+            <div>Checked By:</div>
+            <input
+              type="text"
+              value={checkedBy}
+              onChange={(event) => setCheckedBy(event.target.value)}
+              className="mt-3 w-full border-b border-black py-1 outline-none"
+            />
           </div>
         </div>
       </div>
