@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FormField } from "./form-field";
 import { FormSelect } from "./form-select";
 
@@ -120,8 +120,17 @@ export function EncoderForm() {
   const [isClearHovered, setIsClearHovered] = useState(false);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
+    if (field === "event") {
+      return;
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    if (formData.event !== "Davao City") {
+      setFormData((prev) => ({ ...prev, event: "Davao City" }));
+    }
+  }, [formData.event]);
 
   const handleClear = () => {
     setFormData(initialFormData);
@@ -145,18 +154,39 @@ export function EncoderForm() {
 
       <div className="p-8" style={cardStyle}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <FormSelect
-            label="Event"
-            value={formData.event}
-            onChange={(value) => handleInputChange("event", value)}
-            options={[
-              { value: "", label: "Select event", disabled: true, hidden: true },
-              { value: "Davao City", label: "Davao City" },
-              { value: "Promo Event 1", label: "Promo Event 1" },
-              { value: "Promo Event 2", label: "Promo Event 2" },
-              { value: "Regular Sale", label: "Regular Sale" },
-            ]}
-          />
+          <label className="block">
+            <span
+              className="block mb-2"
+              style={{
+                color: "#374151",
+                fontSize: "14px",
+                lineHeight: "20px",
+                fontWeight: 400,
+              }}
+            >
+              Event
+            </span>
+            <input
+              type="text"
+              value="Davao City"
+              readOnly
+              className="w-full px-3"
+              style={{
+                height: "44px",
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "#D0D5DD",
+                borderRadius: "8px",
+                outline: "none",
+                backgroundColor: "#F9FAFB",
+                color: "#374151",
+                fontSize: "14px",
+                lineHeight: "20px",
+                fontWeight: 400,
+              }}
+            />
+            <input type="hidden" name="event" value={formData.event} />
+          </label>
           <FormField
             label="Date"
             type="date"
