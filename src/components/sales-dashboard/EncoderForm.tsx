@@ -5,7 +5,7 @@ import { FormSelect } from "./form-select";
 type FormData = {
   event: string;
   date: string;
-  pgfNumber: string;
+  pofDigits: string;
   memberName: string;
   username: string;
   newMember: string;
@@ -65,10 +65,32 @@ const DISCOUNT_OPTIONS: Array<{ label: string; value: number }> = [
   { label: "50% (₱650)", value: 650 },
 ];
 
+const POF_PREFIX = "POF-";
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function formatPof(digits: string) {
+  const raw = onlyDigits(digits).slice(0, 9);
+  const part1 = raw.slice(0, 6);
+  const part2 = raw.slice(6, 9);
+
+  if (!raw.length) return "";
+  if (raw.length <= 6) return `${POF_PREFIX}${part1}`;
+  return `${POF_PREFIX}${part1}-${part2}`;
+}
+
+function formatPofForSave(digits: string) {
+  const raw = onlyDigits(digits).slice(0, 9);
+  if (raw.length !== 9) return "";
+  return `${POF_PREFIX}${raw.slice(0, 6)}-${raw.slice(6, 9)}`;
+}
+
 const initialFormData: FormData = {
   event: "Davao City",
   date: "",
-  pgfNumber: "",
+  pofDigits: "",
   memberName: "",
   username: "",
   newMember: "",
@@ -192,8 +214,14 @@ export function EncoderForm() {
   };
 
   const handleSave = () => {
+    const pofNumber = formatPofForSave(formData.pofDigits);
+    const payload = {
+      ...formData,
+      pofNumber,
+    };
+
     // eslint-disable-next-line no-console
-    console.log(formData);
+    console.log(payload);
     alert("Entry saved successfully!");
   };
 
@@ -248,12 +276,44 @@ export function EncoderForm() {
             value={formData.date}
             onChange={(value) => handleInputChange("date", value)}
           />
-          <FormField
-            label="PGF Number"
-            value={formData.pgfNumber}
-            onChange={(value) => handleInputChange("pgfNumber", value)}
-            placeholder="0224cthc"
-          />
+          <label className="block">
+            <span
+              className="block mb-2"
+              style={{
+                color: "#374151",
+                fontSize: "14px",
+                lineHeight: "20px",
+                fontWeight: 400,
+              }}
+            >
+              POF Number
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="POF-000000-000"
+              value={formatPof(formData.pofDigits)}
+              onChange={(event) => {
+                const digits = onlyDigits(event.target.value).slice(0, 9);
+                setFormData((prev) => ({ ...prev, pofDigits: digits }));
+              }}
+              className="w-full px-3"
+              style={{
+                height: "44px",
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "#D0D5DD",
+                borderRadius: "8px",
+                outline: "none",
+                backgroundColor: "#FFFFFF",
+                color: "#111827",
+                fontSize: "14px",
+                lineHeight: "20px",
+                fontWeight: 400,
+              }}
+            />
+          </label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
