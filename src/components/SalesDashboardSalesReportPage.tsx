@@ -276,28 +276,58 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
           <title>Daily Sales Report</title>
           <style>
             @page { size: A4 portrait; margin: 10mm; }
-            html, body { padding: 0; margin: 0; font-family: Arial, sans-serif; }
-            .print-root {
-              width: 100%;
-              transform: scale(0.88);
-              transform-origin: top left;
+            html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+
+            #printPage {
+              width: 190mm;
+              height: 277mm;
+              overflow: hidden;
             }
+
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #cfcfcf; padding: 4px 6px; font-size: 12px; }
+            th, td { border: 1px solid #cfcfcf; padding: 3px 4px; font-size: 10px; }
             th { font-weight: 700; }
-            table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+            table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
             .no-print { display: none !important; }
           </style>
         </head>
         <body>
-          <div class="print-root">
-            ${html}
+          <div id="printPage">
+            <div id="printContent">
+              ${html}
+            </div>
           </div>
           <script>
+            function fitToOnePage() {
+              const page = document.getElementById('printPage');
+              const content = document.getElementById('printContent');
+              if (!page || !content) return;
+
+              content.style.transform = 'none';
+
+              const pageW = page.clientWidth;
+              const pageH = page.clientHeight;
+              const contentW = content.scrollWidth;
+              const contentH = content.scrollHeight;
+
+              if (!contentW || !contentH) return;
+
+              const scaleW = pageW / contentW;
+              const scaleH = pageH / contentH;
+              const scale = Math.min(scaleW, scaleH);
+
+              content.style.transformOrigin = 'top left';
+              content.style.transform = 'scale(' + scale + ')';
+              page.style.overflow = 'hidden';
+            }
+
             window.onload = function() {
-              window.focus();
-              window.print();
-              setTimeout(function() { window.close(); }, 300);
+              fitToOnePage();
+              setTimeout(function() {
+                window.focus();
+                window.print();
+                setTimeout(function() { window.close(); }, 300);
+              }, 200);
             };
           <\/script>
         </body>
