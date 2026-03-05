@@ -261,7 +261,46 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
 
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4" style={{ fontFamily: "Arial, sans-serif", fontSize: "11px" }}>
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+
+            #sales-report-print, #sales-report-print * {
+              visibility: visible;
+            }
+
+            #sales-report-print {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            th, td {
+              border: 1px solid #ccc;
+            }
+
+            @page {
+              size: A4;
+              margin: 12mm;
+            }
+          }
+        `}
+      </style>
+
+      <div className="mb-4 flex items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-2">
           <span>Report Date:</span>
           <input
@@ -271,16 +310,26 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
             className="border border-black px-2 py-1"
           />
         </div>
-        <button
-          type="button"
-          onClick={() => setShowEncodedEntries((prev) => !prev)}
-          className="rounded border border-black px-3 py-1"
-        >
-          {showEncodedEntries ? "Hide Encoded Entries" : "Show Encoded Entries"}
-        </button>
+        <div className="flex items-center justify-end gap-2 no-print">
+          <button
+            type="button"
+            onClick={() => setShowEncodedEntries((prev) => !prev)}
+            className="rounded border border-black px-3 py-1"
+          >
+            {showEncodedEntries ? "Hide Encoded Entries" : "Show Encoded Entries"}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded border border-black px-3 py-1"
+          >
+            Print Report
+          </button>
+        </div>
       </div>
 
-      <div className="border border-black p-3">
+      <div id="sales-report-print">
+        <div className="border border-black p-3">
         <div className="text-center font-bold">Company Name</div>
         <div className="text-center font-bold">Daily Sales Report</div>
         <div className="text-center">Date: {reportDate}</div>
@@ -664,6 +713,7 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
             />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
