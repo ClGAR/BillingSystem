@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { SaleEntry } from "../types/sales";
 
 type SalesDashboardSalesReportPageProps = {
@@ -37,6 +37,25 @@ const getPrice = (label: string) => PRICE_MAP[normalize(label)] ?? 0;
 
 const formatMoney = (value: number) =>
   value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const formatReportDate = (value: string) => {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+  });
+};
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 const titleCase = (value: string) =>
   value
@@ -129,7 +148,6 @@ function getPaymentDetailRows(entries: SaleEntry[], key: PaymentKey) {
 export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSalesReportPageProps) {
   const [reportDate, setReportDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showEncodedEntries, setShowEncodedEntries] = useState(false);
-  const reportRef = useRef<HTMLDivElement>(null);
   const [cashPieces, setCashPieces] = useState<Record<string, string>>(() =>
     Object.fromEntries(DENOMINATIONS.map((denom) => [String(denom), "0"]))
   );
@@ -261,13 +279,206 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
   }, 0);
 
   const handlePrint = () => {
-    const el = reportRef.current;
-    if (!el) return;
-
     const printWindow = window.open("", "_blank", "width=900,height=650");
     if (!printWindow) return;
 
-    const html = el.outerHTML;
+    const platinumSummary = packageRows.find((row) => row.label === "Platinum");
+    const goldSummary = packageRows.find((row) => row.label === "Gold");
+    const silverSummary = packageRows.find((row) => row.label === "Silver");
+    const mobileStockistSummaryQty = mobileStockistPackageSection.rows.reduce((sum, row) => sum + row.qty, 0);
+    const mobileStockistSummaryAmount = mobileStockistPackageSection.total;
+    const mobileStockistSummaryPrice =
+      mobileStockistSummaryQty > 0 ? mobileStockistSummaryAmount / mobileStockistSummaryQty : 0;
+
+    const packageSummaryRows = [
+      {
+        label: "Mobile Stockist",
+        qty: mobileStockistSummaryQty,
+        price: mobileStockistSummaryPrice,
+        amount: mobileStockistSummaryAmount,
+      },
+      {
+        label: "Platinum",
+        qty: platinumSummary?.qty ?? 0,
+        price: platinumSummary?.price ?? getPrice("Platinum"),
+        amount: platinumSummary?.amount ?? 0,
+      },
+      {
+        label: "Gold",
+        qty: goldSummary?.qty ?? 0,
+        price: goldSummary?.price ?? getPrice("Gold"),
+        amount: goldSummary?.amount ?? 0,
+      },
+      {
+        label: "Silver",
+        qty: silverSummary?.qty ?? 0,
+        price: silverSummary?.price ?? getPrice("Silver"),
+        amount: silverSummary?.amount ?? 0,
+      },
+    ];
+    const packageSummaryTotal = packageSummaryRows.reduce((sum, row) => sum + row.amount, 0);
+
+    const retailRowsForPrint = [
+      {
+        label: "Synbiotic+ (Bottle)",
+        qty: bottleQty,
+        price: getPrice("Synbiotic (Bottle)"),
+        amount: bottleQty * getPrice("Synbiotic (Bottle)"),
+      },
+      {
+        label: "Synbiotic+ (Blister)",
+        qty: blisterQty,
+        price: getPrice("Synbiotic (Blister)"),
+        amount: blisterQty * getPrice("Synbiotic (Blister)"),
+      },
+      {
+        label: "Employees Discount",
+        qty: 0,
+        price: getPrice("Employee Discount"),
+        amount: 0,
+      },
+    ];
+    const retailPrintTotal = retailRowsForPrint.reduce((sum, row) => sum + row.amount, 0);
+
+    const mobileStockistRetailRowsForPrint = [
+      {
+        label: "Synbiotic+ (Bottle)",
+        qty: mobileStockistRetailQty,
+        price: mobileStockistRetailPrice,
+        amount: mobileStockistRetailTotal,
+      },
+    ];
+
+    const depotRetailRowsForPrint = [
+      {
+        label: "Synbiotic+ (Bottle)",
+        qty: depotRetailQty,
+        price: depotRetailPrice,
+        amount: depotRetailTotal,
+      },
+    ];
+
+    const paymentTotalsByKey: Record<PaymentKey, number> = {
+      cash: getPaymentTotal(filteredEntries, "cash"),
+      ewallet: getPaymentTotal(filteredEntries, "ewallet"),
+      bank: getPaymentTotal(filteredEntries, "bank"),
+      maya: getPaymentTotal(filteredEntries, "maya"),
+      gcash: getPaymentTotal(filteredEntries, "gcash"),
+      cheque: getPaymentTotal(filteredEntries, "cheque"),
+    };
+
+    const paymentBreakdownRows = [
+      { label: "Cash on hand", amount: paymentTotalsByKey.cash },
+      { label: "E-Wallet", amount: paymentTotalsByKey.ewallet + paymentTotalsByKey.gcash },
+      { label: "Bank Transfer - Security Bank", amount: paymentTotalsByKey.bank },
+      { label: "Maya (IGI)", amount: paymentTotalsByKey.maya },
+      { label: "Maya (ATC)", amount: 0 },
+      { label: "SB Collect (IGI)", amount: 0 },
+      { label: "SB Collect (ATC)", amount: 0 },
+      { label: "Accounts Receivable - CSA", amount: 0 },
+      { label: "Accounts Receivable - Leaders Support", amount: 0 },
+      { label: "Consignment", amount: 0 },
+      { label: "Cheque", amount: paymentTotalsByKey.cheque },
+      { label: "E-Points", amount: 0 },
+    ];
+    const paymentBreakdownTotal = paymentBreakdownRows.reduce((sum, row) => sum + row.amount, 0);
+
+    const cashRows = DENOMINATIONS.map((denom) => {
+      const pieces = toNumber(cashPieces[String(denom)] || "0");
+      return {
+        label: denom === 0.25 ? "0.25" : String(denom),
+        pieces,
+        amount: denom * pieces,
+      };
+    });
+
+    const sbCollectIgiDetails = filteredEntries
+      .filter((entry) => normalize(entry.remarks).includes("sb collect (igi)"))
+      .map((entry) => ({
+        reference: entry.referenceNumber || "-",
+        amount: computeTotal(entry),
+      }));
+
+    const sbCollectAtcDetails = filteredEntries
+      .filter((entry) => normalize(entry.remarks).includes("sb collect (atc)"))
+      .map((entry) => ({
+        reference: entry.referenceNumber || "-",
+        amount: computeTotal(entry),
+      }));
+
+    const arCsaDetails = filteredEntries
+      .filter((entry) => normalize(entry.remarks).includes("ar csa"))
+      .map((entry) => ({
+        memberName: entry.memberName || "-",
+        pof: entry.pgfNumber || "-",
+        amount: computeTotal(entry),
+      }));
+
+    const renderPackageRows = (rows: Array<{ label: string; qty: number; price: number; amount: number }>) =>
+      rows
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.label)}</td>
+              <td class="right">${row.qty}</td>
+              <td class="right">${formatMoney(row.price)}</td>
+              <td class="right">${formatMoney(row.amount)}</td>
+            </tr>
+          `
+        )
+        .join("");
+
+    const renderNamedAmountRows = (rows: Array<{ label: string; amount: number }>) =>
+      rows
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.label)}</td>
+              <td class="right">${formatMoney(row.amount)}</td>
+            </tr>
+          `
+        )
+        .join("");
+
+    const renderDetailRows = (rows: Array<{ name: string; reference: string; amount: number }>) => {
+      if (!rows.length) {
+        return `
+          <tr>
+            <td>-</td>
+            <td>-</td>
+            <td class="right">${formatMoney(0)}</td>
+          </tr>
+        `;
+      }
+
+      return rows
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.name)}</td>
+              <td>${escapeHtml(row.reference)}</td>
+              <td class="right">${formatMoney(row.amount)}</td>
+            </tr>
+          `
+        )
+        .join("");
+    };
+
+    const bankDetailRows = bankDetails.map((row) => ({
+      name: row.memberName || "-",
+      reference: row.reference || "-",
+      amount: row.amount,
+    }));
+    const mayaDetailRows = mayaDetails.map((row) => ({
+      name: row.memberName || "-",
+      reference: row.reference || "-",
+      amount: row.amount,
+    }));
+    const bankTotal = bankDetailRows.reduce((sum, row) => sum + row.amount, 0);
+    const mayaTotal = mayaDetailRows.reduce((sum, row) => sum + row.amount, 0);
+    const sbCollectIgiTotal = sbCollectIgiDetails.reduce((sum, row) => sum + row.amount, 0);
+    const sbCollectAtcTotal = sbCollectAtcDetails.reduce((sum, row) => sum + row.amount, 0);
+    const arCsaTotal = arCsaDetails.reduce((sum, row) => sum + row.amount, 0);
 
     printWindow.document.open();
     printWindow.document.write(`
@@ -276,25 +487,351 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
           <title>Daily Sales Report</title>
           <style>
             @page { size: A4 portrait; margin: 10mm; }
-            html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-
-            #printPage {
-              width: 190mm;
-              height: 277mm;
-              overflow: hidden;
-            }
-
+            html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; }
+            #printPage { width: 190mm; height: 277mm; overflow: hidden; }
+            #printContent { width: 100%; transform-origin: top left; }
+            .title { text-align: center; margin-bottom: 4px; }
+            .title h1 { font-size: 12px; margin: 0; font-weight: 700; }
+            .title h2 { font-size: 11px; margin: 1px 0 0; font-weight: 700; }
+            .title .date { font-size: 9.5px; margin-top: 1px; }
+            .topGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .stack > table { margin-top: 4px; }
+            .stack > table:first-child { margin-top: 0; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #cfcfcf; padding: 3px 4px; font-size: 10px; }
-            th { font-weight: 700; }
-            table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
-            .no-print { display: none !important; }
+            th, td { border: 1px solid #444; padding: 2px 3px; font-size: 9px; line-height: 1.1; }
+            th { font-weight: 700; text-transform: uppercase; background: #f3f4f6; }
+            .noUpper th { text-transform: none; }
+            .sectionTitle { font-weight: 700; background: #eceff3; }
+            .right { text-align: right; }
+            .center { text-align: center; }
+            .miniGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+            .detailGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+            .signGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; font-size: 9px; }
+            .signBox { min-height: 28px; }
+            .line { border-bottom: 1px solid #222; margin-top: 12px; }
+            table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
           </style>
         </head>
         <body>
           <div id="printPage">
             <div id="printContent">
-              ${html}
+              <div class="title">
+                <h1>Company Name</h1>
+                <h2>Daily Sales Report</h2>
+                <div class="date">${escapeHtml(formatReportDate(reportDate))}</div>
+              </div>
+
+              <div class="topGrid">
+                <div class="stack">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(packageSummaryRows)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Package Sales</td>
+                        <td class="right sectionTitle">${formatMoney(packageSummaryTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Mobile Stockist Package</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(mobileStockistPackageSection.rows)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Mobile Stockist Package Sales</td>
+                        <td class="right sectionTitle">${formatMoney(mobileStockistPackageSection.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Depot Package</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(depotPackageSection.rows)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Depot Package Sales</td>
+                        <td class="right sectionTitle">${formatMoney(depotPackageSection.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Retail</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(retailRowsForPrint)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Retail Sales</td>
+                        <td class="right sectionTitle">${formatMoney(retailPrintTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Mobile Stockist Retail Detail</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(mobileStockistRetailRowsForPrint)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Mobile Stockist Retail Sales</td>
+                        <td class="right sectionTitle">${formatMoney(mobileStockistRetailTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Depot Retail</th>
+                        <th class="right">Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Amount Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderPackageRows(depotRetailRowsForPrint)}
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Total Depot Retail Sales</td>
+                        <td class="right sectionTitle">${formatMoney(depotRetailTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td class="sectionTitle" colspan="3">Grand Total</td>
+                        <td class="right sectionTitle">${formatMoney(legacyGrandTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="stack">
+                  <table class="noUpper">
+                    <thead>
+                      <tr>
+                        <th>Cash on Hand</th>
+                        <th class="right">Pieces</th>
+                        <th class="right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${cashRows
+                        .map(
+                          (row) => `
+                            <tr>
+                              <td>${row.label}</td>
+                              <td class="right">${row.pieces}</td>
+                              <td class="right">${formatMoney(row.amount)}</td>
+                            </tr>
+                          `
+                        )
+                        .join("")}
+                      <tr>
+                        <td class="sectionTitle" colspan="2">Total Cash on Hand</td>
+                        <td class="right sectionTitle">${formatMoney(cashTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table class="noUpper">
+                    <thead>
+                      <tr>
+                        <th>Payment Method</th>
+                        <th class="right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${renderNamedAmountRows(paymentBreakdownRows)}
+                      <tr>
+                        <td class="sectionTitle">Total</td>
+                        <td class="right sectionTitle">${formatMoney(paymentBreakdownTotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="miniGrid">
+                <table class="noUpper">
+                  <thead>
+                    <tr><th colspan="2">New Accounts</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Silver</td><td class="right">${newSilver}</td></tr>
+                    <tr><td>Gold</td><td class="right">${newGold}</td></tr>
+                    <tr><td>Platinum</td><td class="right">${newPlatinum}</td></tr>
+                  </tbody>
+                </table>
+
+                <table class="noUpper">
+                  <thead>
+                    <tr><th colspan="2">Upgrades</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Silver</td><td class="right">0</td></tr>
+                    <tr><td>Gold</td><td class="right">0</td></tr>
+                    <tr><td>Platinum</td><td class="right">0</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="detailGrid">
+                <table class="noUpper">
+                  <thead>
+                    <tr><th>Bank</th><th>Reference #</th><th class="right">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    ${renderDetailRows(bankDetailRows)}
+                    <tr>
+                      <td class="sectionTitle" colspan="2">Total</td>
+                      <td class="right sectionTitle">${formatMoney(bankTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <table class="noUpper">
+                  <thead>
+                    <tr><th>Maya (IGI)</th><th>Reference #</th><th class="right">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    ${renderDetailRows(mayaDetailRows)}
+                    <tr>
+                      <td class="sectionTitle" colspan="2">Total</td>
+                      <td class="right sectionTitle">${formatMoney(mayaTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <table class="noUpper">
+                  <thead>
+                    <tr><th colspan="2">SB Collect (IGI)</th></tr>
+                    <tr><th>Reference #</th><th class="right">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    ${
+                      sbCollectIgiDetails.length
+                        ? sbCollectIgiDetails
+                            .map(
+                              (row) => `
+                                <tr>
+                                  <td>${escapeHtml(row.reference)}</td>
+                                  <td class="right">${formatMoney(row.amount)}</td>
+                                </tr>
+                              `
+                            )
+                            .join("")
+                        : `<tr><td>-</td><td class="right">${formatMoney(0)}</td></tr>`
+                    }
+                    <tr>
+                      <td class="sectionTitle">Total</td>
+                      <td class="right sectionTitle">${formatMoney(sbCollectIgiTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <table class="noUpper">
+                  <thead>
+                    <tr><th colspan="2">SB Collect (ATC)</th></tr>
+                    <tr><th>Reference #</th><th class="right">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    ${
+                      sbCollectAtcDetails.length
+                        ? sbCollectAtcDetails
+                            .map(
+                              (row) => `
+                                <tr>
+                                  <td>${escapeHtml(row.reference)}</td>
+                                  <td class="right">${formatMoney(row.amount)}</td>
+                                </tr>
+                              `
+                            )
+                            .join("")
+                        : `<tr><td>-</td><td class="right">${formatMoney(0)}</td></tr>`
+                    }
+                    <tr>
+                      <td class="sectionTitle">Total</td>
+                      <td class="right sectionTitle">${formatMoney(sbCollectAtcTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <table class="noUpper" style="margin-top:6px;">
+                <thead>
+                  <tr><th>AR CSA (Member Name)</th><th>POF #</th><th class="right">Amount</th></tr>
+                </thead>
+                <tbody>
+                  ${
+                    arCsaDetails.length
+                      ? arCsaDetails
+                          .map(
+                            (row) => `
+                              <tr>
+                                <td>${escapeHtml(row.memberName)}</td>
+                                <td>${escapeHtml(row.pof)}</td>
+                                <td class="right">${formatMoney(row.amount)}</td>
+                              </tr>
+                            `
+                          )
+                          .join("")
+                      : `<tr><td>-</td><td>-</td><td class="right">${formatMoney(0)}</td></tr>`
+                  }
+                  <tr>
+                    <td class="sectionTitle" colspan="2">Total</td>
+                    <td class="right sectionTitle">${formatMoney(arCsaTotal)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="signGrid">
+                <div class="signBox">
+                  <div>Prepared By:</div>
+                  <div class="line">${escapeHtml(preparedBy || "")}</div>
+                  <div>Encoder</div>
+                </div>
+                <div class="signBox">
+                  <div>Checked By:</div>
+                  <div class="line">${escapeHtml(checkedBy || "")}</div>
+                  <div>Supervisor</div>
+                </div>
+              </div>
             </div>
           </div>
           <script>
@@ -304,6 +841,7 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
               if (!page || !content) return;
 
               content.style.transform = 'none';
+              content.style.width = '100%';
 
               const pageW = page.clientWidth;
               const pageH = page.clientHeight;
@@ -314,7 +852,7 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
 
               const scaleW = pageW / contentW;
               const scaleH = pageH / contentH;
-              const scale = Math.min(scaleW, scaleH);
+              const scale = Math.min(scaleW, scaleH, 1);
 
               content.style.transformOrigin = 'top left';
               content.style.transform = 'scale(' + scale + ')';
@@ -366,7 +904,7 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
         </div>
       </div>
 
-      <div ref={reportRef} id="sales-report-print" className="report-root">
+      <div id="sales-report-print" className="report-root">
         <div className="border border-black p-3">
         <div className="text-center font-bold">Company Name</div>
         <div className="text-center font-bold">Daily Sales Report</div>
