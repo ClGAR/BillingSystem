@@ -159,15 +159,9 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
 
   const bottleQty = filteredEntries.reduce((sum, entry) => sum + (parseInt(entry.releasedBottles, 10) || 0), 0);
   const blisterQty = filteredEntries.reduce((sum, entry) => sum + (parseInt(entry.releasedBlister, 10) || 0), 0);
-  const retailRows = [
-    { label: "Bottle", qty: bottleQty, price: getPrice("Bottle"), amount: bottleQty * getPrice("Bottle") },
-    { label: "Blister", qty: blisterQty, price: getPrice("Blister"), amount: blisterQty * getPrice("Blister") },
-    { label: "Employee Discount", qty: 0, price: getPrice("Employee Discount"), amount: 0 },
-  ];
 
   const packageTotal = packageRows.reduce((sum, row) => sum + row.amount, 0);
-  const retailTotal = retailRows.reduce((sum, row) => sum + row.amount, 0);
-  const grandTotal = packageTotal + retailTotal;
+  const grandTotal = packageTotal;
 
   const legacyTierRows: Array<{ key: SaleEntry["memberType"]; label: string }> = [
     { key: "platinum", label: "Platinum" },
@@ -304,27 +298,6 @@ export function SalesDashboardSalesReportPage({ salesEntries }: SalesDashboardSa
               </thead>
               <tbody>
                 {packageRows.map((row) => (
-                  <tr key={row.label}>
-                    <td className="border border-black px-2 py-1">{row.label}</td>
-                    <td className="border border-black px-2 py-1 text-right">{row.qty}</td>
-                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.price)}</td>
-                    <td className="border border-black px-2 py-1 text-right">{formatMoney(row.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <table className="w-full border border-black border-collapse">
-              <thead>
-                <tr>
-                  <th className="border border-black px-2 py-1 text-left">Retail Sales</th>
-                  <th className="border border-black px-2 py-1 text-right">Qty</th>
-                  <th className="border border-black px-2 py-1 text-right">Price</th>
-                  <th className="border border-black px-2 py-1 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {retailRows.map((row) => (
                   <tr key={row.label}>
                     <td className="border border-black px-2 py-1">{row.label}</td>
                     <td className="border border-black px-2 py-1 text-right">{row.qty}</td>
