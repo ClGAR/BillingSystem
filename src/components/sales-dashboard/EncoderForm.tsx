@@ -42,7 +42,7 @@ const initialFormData: FormData = {
   memberName: "",
   username: "",
   newMember: "",
-  memberType: "",
+  memberType: "Distributor",
   packageType: "",
   toBlister: "",
   originalPrice: "3000",
@@ -233,9 +233,10 @@ export function EncoderForm() {
             onChange={(value) => handleInputChange("memberType", value)}
             options={[
               { value: "Distributor", label: "Distributor" },
-              { value: "Platinum", label: "Platinum" },
-              { value: "Gold", label: "Gold" },
-              { value: "Silver", label: "Silver" },
+              { value: "Mobile Stockist", label: "Mobile Stockist" },
+              { value: "City Stockist", label: "City Stockist" },
+              { value: "Center", label: "Center" },
+              { value: "Non-member", label: "Non-member" },
             ]}
           />
           <FormSelect
